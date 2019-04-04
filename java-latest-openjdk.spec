@@ -409,6 +409,7 @@ alternatives \\
   --slave %{_bindir}/jdb jdb %{sdkbindir -- %{?1}}/jdb \\
   --slave %{_bindir}/jdeps jdeps %{sdkbindir -- %{?1}}/jdeps \\
   --slave %{_bindir}/jdeprscan jdeprscan %{sdkbindir -- %{?1}}/jdeprscan \\
+  --slave %{_bindir}/jfr jfr %{sdkbindir -- %{?1}}/jfr \\
   --slave %{_bindir}/jimage jimage %{sdkbindir -- %{?1}}/jimage \\
   --slave %{_bindir}/jinfo jinfo %{sdkbindir -- %{?1}}/jinfo \\
   --slave %{_bindir}/jmap jmap %{sdkbindir -- %{?1}}/jmap \\
@@ -944,7 +945,7 @@ Version: %{newjavaver}.%{buildver}
 # This package needs `.rolling` as part of Release so as to not conflict on install with
 # java-X-openjdk. I.e. when latest rolling release is also an LTS release packaged as
 # java-X-openjdk. See: https://bugzilla.redhat.com/show_bug.cgi?id=1647298
-Release: 3.rolling%{?dist}
+Release: 4.rolling%{?dist}
 # java-1.5.0-ibm from jpackage.org set Epoch to 1 for unknown reasons
 # and this change was brought into RHEL-4. java-1.5.0-ibm packages
 # also included the epoch in their virtual provides. This created a
@@ -1818,6 +1819,9 @@ require "copy_jdk_configs.lua"
 
 
 %changelog
+* Thu Apr 04 2019 Petra Mikova <pmikova@redhat.com - 1:12.0.0.33-4.rolling
+- added slave for jfr binary in devel package
+
 * Thu Mar 21 2019 Petra Mikova <pmikova@redhat.com - 1:12.0.0.33-3.rolling
 - Replaced pcsc-lite-devel (which is in optional channel) with pcsc-lite-libs.
 - added rh1684077-openjdk_should_depend_on_pcsc-lite-libs_instead_of_pcsc-lite-devel.patch to make jdk work with pcsc
