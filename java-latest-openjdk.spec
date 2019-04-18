@@ -206,7 +206,7 @@
 
 # New Version-String scheme-style defines
 %global majorver 12
-%global securityver 0
+%global securityver 1
 # buildjdkver is usually same as %%{majorver},
 # but in time of bootstrap of next jdk, it is majorver-1, 
 # and this it is better to change it here, on single place
@@ -224,7 +224,7 @@
 %global origin_nice     OpenJDK
 %global top_level_dir_name   %{origin}
 %global minorver        0
-%global buildver        33
+%global buildver        12
 # priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 %global priority %( printf '%02d%02d%02d%02d' %{majorver} %{minorver} %{securityver} %{buildver} )
@@ -948,7 +948,7 @@ Version: %{newjavaver}.%{buildver}
 # This package needs `.rolling` as part of Release so as to not conflict on install with
 # java-X-openjdk. I.e. when latest rolling release is also an LTS release packaged as
 # java-X-openjdk. See: https://bugzilla.redhat.com/show_bug.cgi?id=1647298
-Release: 4.rolling%{?dist}
+Release: 1.rolling%{?dist}
 # java-1.5.0-ibm from jpackage.org set Epoch to 1 for unknown reasons
 # and this change was brought into RHEL-4. java-1.5.0-ibm packages
 # also included the epoch in their virtual provides. This created a
@@ -982,7 +982,7 @@ URL:      http://openjdk.java.net/
 
 # to regenerate source0 (jdk) and source8 (jdk's taspets) run update_package.sh
 # update_package.sh contains hard-coded repos, revisions, tags, and projects to regenerate the source archives
-Source0: jdk-jdk%{majorver}-jdk-%{majorver}+%{buildver}.tar.xz
+Source0: jdk-updates-jdk%{majorver}u-jdk-%{majorver}.%{minorver}.%{securityver}+%{buildver}.tar.xz
 Source8: systemtap_3.2_tapsets_hg-icedtea8-9d464368e06d.tar.xz
 
 # Desktop files. Adapted from IcedTea
@@ -1592,7 +1592,7 @@ popd
 # Install Javadoc documentation
 install -d -m 755 $RPM_BUILD_ROOT%{_javadocdir}
 cp -a %{buildoutputdir -- $suffix}/images/docs $RPM_BUILD_ROOT%{_javadocdir}/%{uniquejavadocdir -- $suffix}
-cp -a %{buildoutputdir -- $suffix}/bundles/jdk-%{majorver}+%{buildver}%{lts_designator_zip}-docs.zip $RPM_BUILD_ROOT%{_javadocdir}/%{uniquejavadocdir -- $suffix}.zip
+cp -a %{buildoutputdir -- $suffix}/bundles/jdk-%{majorver}.%{minorver}.%{securityver}+%{buildver}%{lts_designator_zip}-docs.zip $RPM_BUILD_ROOT%{_javadocdir}/%{uniquejavadocdir -- $suffix}.zip
 
 # Install icons and menu entries
 for s in 16 24 32 48 ; do
@@ -1822,10 +1822,13 @@ require "copy_jdk_configs.lua"
 
 
 %changelog
-* Thu Apr 04 2019 Petra Mikova <pmikova@redhat.com - 1:12.0.0.33-4.rolling
+* Thu Apr 18 2019 Petra Mikova <pmikova@redhat.com> - 1:12.0.1.12-1.rolling
+- updated sources to current CPU release
+
+* Thu Apr 04 2019 Petra Mikova <pmikova@redhat.com> - 1:12.0.0.33-4.rolling
 - added slave for jfr binary in devel package
 
-* Thu Mar 21 2019 Petra Mikova <pmikova@redhat.com - 1:12.0.0.33-3.rolling
+* Thu Mar 21 2019 Petra Mikova <pmikova@redhat.com> - 1:12.0.0.33-3.rolling
 - Replaced pcsc-lite-devel (which is in optional channel) with pcsc-lite-libs.
 - added rh1684077-openjdk_should_depend_on_pcsc-lite-libs_instead_of_pcsc-lite-devel.patch to make jdk work with pcsc
 - removed LTS string from LTS designator, because epel builds get identified as rhel and JDK 12 is not LTS
