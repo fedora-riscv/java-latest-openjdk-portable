@@ -251,14 +251,16 @@
 # fix for https://bugzilla.redhat.com/show_bug.cgi?id=1111349
 #         https://bugzilla.redhat.com/show_bug.cgi?id=1590796#c14
 #         https://bugzilla.redhat.com/show_bug.cgi?id=1655938
-%if %is_system_jdk
 %global _privatelibs libsplashscreen[.]so.*|libawt_xawt[.]so.*|libjli[.]so.*|libattach[.]so.*|libawt[.]so.*|libextnet[.]so.*|libawt_headless[.]so.*|libdt_socket[.]so.*|libfontmanager[.]so.*|libinstrument[.]so.*|libj2gss[.]so.*|libj2pcsc[.]so.*|libj2pkcs11[.]so.*|libjaas[.]so.*|libjavajpeg[.]so.*|libjdwp[.]so.*|libjimage[.]so.*|libjsound[.]so.*|liblcms[.]so.*|libmanagement[.]so.*|libmanagement_agent[.]so.*|libmanagement_ext[.]so.*|libmlib_image[.]so.*|libnet[.]so.*|libnio[.]so.*|libprefs[.]so.*|librmi[.]so.*|libsaproc[.]so.*|libsctp[.]so.*|libsunec[.]so.*|libunpack[.]so.*|libzip[.]so.*
+%global _publiclibs libjawt[.]so.*|libjava[.]so.*|libjvm[.]so.*|libverify[.]so.*|libjsig[.]so.*
+%if %is_system_jdk
 %global __provides_exclude ^(%{_privatelibs})$
 %global __requires_exclude ^(%{_privatelibs})$
 %global __provides_exclude_from ^.*/%{uniquesuffix -- %{debug_suffix_unquoted}}/.*$
 %else
-%global __provides_exclude lib.*[.]so.*
-%global __requires_exclude lib.*[.]so.*
+# Don't generate provides/requires for JDK provided shared libraries at all.
+%global __provides_exclude ^(%{_privatelibs}|%{_publiclibs})$
+%global __requires_exclude ^(%{_privatelibs}|%{_publiclibs})$
 %endif
 
 
@@ -948,7 +950,7 @@ Version: %{newjavaver}.%{buildver}
 # This package needs `.rolling` as part of Release so as to not conflict on install with
 # java-X-openjdk. I.e. when latest rolling release is also an LTS release packaged as
 # java-X-openjdk. See: https://bugzilla.redhat.com/show_bug.cgi?id=1647298
-Release: 1.rolling%{?dist}
+Release: 2.rolling%{?dist}
 # java-1.5.0-ibm from jpackage.org set Epoch to 1 for unknown reasons
 # and this change was brought into RHEL-4. java-1.5.0-ibm packages
 # also included the epoch in their virtual provides. This created a
@@ -1822,6 +1824,9 @@ require "copy_jdk_configs.lua"
 
 
 %changelog
+* Tue May 21 2019 Petra Alice Mikova <pmikova@redhat.com> - 1:12.0.1.12-2.rolling
+- fixed requires/provides for the non-system JDK case (backport of RHBZ#1702324)
+
 * Thu Apr 18 2019 Petra Mikova <pmikova@redhat.com> - 1:12.0.1.12-1.rolling
 - updated sources to current CPU release
 
