@@ -205,12 +205,12 @@
 %endif
 
 # New Version-String scheme-style defines
-%global majorver 12
-%global securityver 1
+%global majorver 13
+%global securityver 0
 # buildjdkver is usually same as %%{majorver},
 # but in time of bootstrap of next jdk, it is majorver-1, 
 # and this it is better to change it here, on single place
-%global buildjdkver 11
+%global buildjdkver 12
 # Used via new version scheme. JDK 11 was
 # GA'ed in March 2019 => 19.3
 %global vendor_version_string 19.3
@@ -224,7 +224,7 @@
 %global origin_nice     OpenJDK
 %global top_level_dir_name   %{origin}
 %global minorver        0
-%global buildver        12
+%global buildver        27
 # priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 %global priority %( printf '%02d%02d%02d%02d' %{majorver} %{minorver} %{securityver} %{buildver} )
@@ -730,6 +730,12 @@ exit 0
 %{_mandir}/man1/jstatd-%{uniquesuffix -- %{?1}}.1*
 %{_mandir}/man1/rmic-%{uniquesuffix -- %{?1}}.1*
 %{_mandir}/man1/serialver-%{uniquesuffix -- %{?1}}.1*
+%{_mandir}/man1/jdeprscan-%{uniquesuffix -- %{?1}}.1.gz
+%{_mandir}/man1/jhsdb-%{uniquesuffix -- %{?1}}.1.gz
+%{_mandir}/man1/jlink-%{uniquesuffix -- %{?1}}.1.gz
+%{_mandir}/man1/jmod-%{uniquesuffix -- %{?1}}.1.gz
+%{_mandir}/man1/jshell-%{uniquesuffix -- %{?1}}.1.gz
+
 %if %{with_systemtap}
 %dir %{tapsetroot}
 %dir %{tapsetdirttapset}
@@ -950,7 +956,7 @@ Version: %{newjavaver}.%{buildver}
 # This package needs `.rolling` as part of Release so as to not conflict on install with
 # java-X-openjdk. I.e. when latest rolling release is also an LTS release packaged as
 # java-X-openjdk. See: https://bugzilla.redhat.com/show_bug.cgi?id=1647298
-Release: 2.rolling%{?dist}
+Release: 0.ea.1.rolling%{?dist}
 # java-1.5.0-ibm from jpackage.org set Epoch to 1 for unknown reasons
 # and this change was brought into RHEL-4. java-1.5.0-ibm packages
 # also included the epoch in their virtual provides. This created a
@@ -984,7 +990,7 @@ URL:      http://openjdk.java.net/
 
 # to regenerate source0 (jdk) and source8 (jdk's taspets) run update_package.sh
 # update_package.sh contains hard-coded repos, revisions, tags, and projects to regenerate the source archives
-Source0: jdk-updates-jdk%{majorver}u-jdk-%{majorver}.%{minorver}.%{securityver}+%{buildver}.tar.xz
+Source0: jdk-jdk%{majorver}-jdk-%{majorver}+%{buildver}.tar.xz
 Source8: systemtap_3.2_tapsets_hg-icedtea8-9d464368e06d.tar.xz
 
 # Desktop files. Adapted from IcedTea
@@ -1053,7 +1059,7 @@ BuildRequires: pkgconfig
 BuildRequires: xorg-x11-proto-devel
 BuildRequires: zip
 BuildRequires: javapackages-filesystem
-BuildRequires: java-%{buildjdkver}-openjdk-devel
+BuildRequires: java-latest-openjdk-devel
 # Zero-assembler build requirement
 %ifnarch %{jit_arches}
 BuildRequires: libffi-devel
@@ -1594,7 +1600,7 @@ popd
 # Install Javadoc documentation
 install -d -m 755 $RPM_BUILD_ROOT%{_javadocdir}
 cp -a %{buildoutputdir -- $suffix}/images/docs $RPM_BUILD_ROOT%{_javadocdir}/%{uniquejavadocdir -- $suffix}
-cp -a %{buildoutputdir -- $suffix}/bundles/jdk-%{majorver}.%{minorver}.%{securityver}+%{buildver}%{lts_designator_zip}-docs.zip $RPM_BUILD_ROOT%{_javadocdir}/%{uniquejavadocdir -- $suffix}.zip
+cp -a %{buildoutputdir -- $suffix}/bundles/jdk-%{majorver}+%{buildver}%{lts_designator_zip}-docs.zip $RPM_BUILD_ROOT%{_javadocdir}/%{uniquejavadocdir -- $suffix}.zip
 
 # Install icons and menu entries
 for s in 16 24 32 48 ; do
@@ -1824,6 +1830,12 @@ require "copy_jdk_configs.lua"
 
 
 %changelog
+* Tue Jul 09 2019 Petra Alice Mikova <pmikova@redhat.com> - 1:13.0.0.27-0.ea.1.rolling
+- updated to jdk 13
+- adapted pr2126-synchronise_elliptic_curves_in_sun_security_ec_namedcurve_with_those_listed_by_nss.patch
+- adapted rh1648242-accessible_toolkit_crash_do_not_break_jvm.patch
+- fixed file listings
+
 * Tue May 21 2019 Petra Alice Mikova <pmikova@redhat.com> - 1:12.0.1.12-2.rolling
 - fixed requires/provides for the non-system JDK case (backport of RHBZ#1702324)
 
