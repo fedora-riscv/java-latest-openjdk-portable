@@ -224,7 +224,7 @@
 %global origin_nice     OpenJDK
 %global top_level_dir_name   %{origin}
 %global minorver        0
-%global buildver        27
+%global buildver        28
 %global rpmrelease      1
 # priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
@@ -1848,7 +1848,7 @@ require "copy_jdk_configs.lua"
 
 
 %changelog
-* Tue Jul 09 2019 Petra Alice Mikova <pmikova@redhat.com> - 1:13.0.0.27-0.1.ea.rolling
+* Tue Jul 09 2019 Petra Alice Mikova <pmikova@redhat.com> - 1:13.0.0.28-0.1.ea.rolling
 - updated to jdk 13
 - adapted pr2126-synchronise_elliptic_curves_in_sun_security_ec_namedcurve_with_those_listed_by_nss.patch
 - adapted rh1648242-accessible_toolkit_crash_do_not_break_jvm.patch
