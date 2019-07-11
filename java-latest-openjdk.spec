@@ -225,6 +225,7 @@
 %global top_level_dir_name   %{origin}
 %global minorver        0
 %global buildver        27
+%global rpmrelease      1
 # priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 %global priority %( printf '%02d%02d%02d%02d' %{majorver} %{minorver} %{securityver} %{buildver} )
@@ -235,6 +236,23 @@
 %global newjavaver      %{majorver}.%{minorver}.%{securityver}
 
 %global javaver         %{majorver}
+
+# Define milestone (EA for pre-releases, GA for releases)
+# Release will be (where N is usually a number starting at 1):
+# - 0.N%%{?extraver}%%{?dist} for EA releases,
+# - N%%{?extraver}{?dist} for GA releases
+%global is_ga           0
+%if %{is_ga}
+%global ea_designator ""
+%global ea_designator_zip ""
+%global extraver %{nil}
+%global eaprefix %{nil}
+%else
+%global ea_designator ea
+%global ea_designator_zip -%{ea_designator}
+%global extraver .%{ea_designator}
+%global eaprefix 0.
+%endif
 
 # parametrized macros are order-sensitive
 %global compatiblename  java-%{majorver}-%{origin}
@@ -956,7 +974,7 @@ Version: %{newjavaver}.%{buildver}
 # This package needs `.rolling` as part of Release so as to not conflict on install with
 # java-X-openjdk. I.e. when latest rolling release is also an LTS release packaged as
 # java-X-openjdk. See: https://bugzilla.redhat.com/show_bug.cgi?id=1647298
-Release: 0.ea.1.rolling%{?dist}
+Release: %{?eaprefix}%{rpmrelease}%{?extraver}.rolling%{?dist}
 # java-1.5.0-ibm from jpackage.org set Epoch to 1 for unknown reasons
 # and this change was brought into RHEL-4. java-1.5.0-ibm packages
 # also included the epoch in their virtual provides. This created a
@@ -1377,7 +1395,7 @@ bash ../configure \
     --with-jobs=1 \
 %endif
     --with-version-build=%{buildver} \
-    --with-version-pre="" \
+    --with-version-pre="%{ea_designator}"\
     --with-version-opt=%{lts_designator} \
     --with-vendor-version-string="%{vendor_version_string}" \
     --with-boot-jdk=/usr/lib/jvm/java-%{buildjdkver}-openjdk \
@@ -1600,7 +1618,7 @@ popd
 # Install Javadoc documentation
 install -d -m 755 $RPM_BUILD_ROOT%{_javadocdir}
 cp -a %{buildoutputdir -- $suffix}/images/docs $RPM_BUILD_ROOT%{_javadocdir}/%{uniquejavadocdir -- $suffix}
-cp -a %{buildoutputdir -- $suffix}/bundles/jdk-%{majorver}+%{buildver}%{lts_designator_zip}-docs.zip $RPM_BUILD_ROOT%{_javadocdir}/%{uniquejavadocdir -- $suffix}.zip
+cp -a %{buildoutputdir -- $suffix}/bundles/jdk-%{majorver}%{ea_designator_zip}+%{buildver}%{lts_designator_zip}-docs.zip $RPM_BUILD_ROOT%{_javadocdir}/%{uniquejavadocdir -- $suffix}.zip
 
 # Install icons and menu entries
 for s in 16 24 32 48 ; do
@@ -1830,11 +1848,14 @@ require "copy_jdk_configs.lua"
 
 
 %changelog
-* Tue Jul 09 2019 Petra Alice Mikova <pmikova@redhat.com> - 1:13.0.0.27-0.ea.1.rolling
+* Tue Jul 09 2019 Petra Alice Mikova <pmikova@redhat.com> - 1:13.0.0.27-0.1.ea.rolling
 - updated to jdk 13
 - adapted pr2126-synchronise_elliptic_curves_in_sun_security_ec_namedcurve_with_those_listed_by_nss.patch
 - adapted rh1648242-accessible_toolkit_crash_do_not_break_jvm.patch
 - fixed file listings
+- included https://src.fedoraproject.org/rpms/java-11-openjdk/pull-request/49:
+- Include 'ea' designator in Release when appropriate
+- Handle milestone as variables so we can alter it easily and set the docs zip filename appropriately
 
 * Tue May 21 2019 Petra Alice Mikova <pmikova@redhat.com> - 1:12.0.1.12-2.rolling
 - fixed requires/provides for the non-system JDK case (backport of RHBZ#1702324)
