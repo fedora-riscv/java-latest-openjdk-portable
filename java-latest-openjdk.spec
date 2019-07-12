@@ -707,6 +707,7 @@ exit 0
 %ifarch %{jit_arches}
 %ifnarch s390x
 %{_jvmdir}/%{sdkdir -- %{?1}}/bin/jhsdb
+%{_mandir}/man1/jhsdb-%{uniquesuffix -- %{?1}}.1.gz
 %endif
 %endif
 %{_jvmdir}/%{sdkdir -- %{?1}}/bin/jinfo
@@ -749,7 +750,6 @@ exit 0
 %{_mandir}/man1/rmic-%{uniquesuffix -- %{?1}}.1*
 %{_mandir}/man1/serialver-%{uniquesuffix -- %{?1}}.1*
 %{_mandir}/man1/jdeprscan-%{uniquesuffix -- %{?1}}.1.gz
-%{_mandir}/man1/jhsdb-%{uniquesuffix -- %{?1}}.1.gz
 %{_mandir}/man1/jlink-%{uniquesuffix -- %{?1}}.1.gz
 %{_mandir}/man1/jmod-%{uniquesuffix -- %{?1}}.1.gz
 %{_mandir}/man1/jshell-%{uniquesuffix -- %{?1}}.1.gz
