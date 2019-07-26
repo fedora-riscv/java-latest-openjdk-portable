@@ -210,7 +210,7 @@
 # buildjdkver is usually same as %%{majorver},
 # but in time of bootstrap of next jdk, it is majorver-1, 
 # and this it is better to change it here, on single place
-%global buildjdkver 12
+%global buildjdkver 13
 # Used via new version scheme. JDK 11 was
 # GA'ed in March 2019 => 19.3
 %global vendor_version_string 19.3
@@ -225,7 +225,7 @@
 %global top_level_dir_name   %{origin}
 %global minorver        0
 %global buildver        28
-%global rpmrelease      1
+%global rpmrelease      2
 # priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 %global priority %( printf '%02d%02d%02d%02d' %{majorver} %{minorver} %{securityver} %{buildver} )
@@ -974,7 +974,7 @@ Version: %{newjavaver}.%{buildver}
 # This package needs `.rolling` as part of Release so as to not conflict on install with
 # java-X-openjdk. I.e. when latest rolling release is also an LTS release packaged as
 # java-X-openjdk. See: https://bugzilla.redhat.com/show_bug.cgi?id=1647298
-Release: %{?eaprefix}%{rpmrelease}%{?extraver}.rolling%{?dist}.1
+Release: %{?eaprefix}%{rpmrelease}%{?extraver}.rolling%{?dist}
 # java-1.5.0-ibm from jpackage.org set Epoch to 1 for unknown reasons
 # and this change was brought into RHEL-4. java-1.5.0-ibm packages
 # also included the epoch in their virtual provides. This created a
@@ -1848,6 +1848,11 @@ require "copy_jdk_configs.lua"
 
 
 %changelog
+* Fri Jul 26 2019 Severin Gehwolf <sgehwolf@redhat.com> - 1:13.0.0.28-0.2.ea.rolling
+- Fix bootjdkver macro. It attempted to build with jdk 12, which is
+  no longer available in rawhide (it's 13 instead).
+- Fix Release as rpmdev-bumpspec doesn't do it correctly.
+
 * Thu Jul 25 2019 Fedora Release Engineering <releng@fedoraproject.org> - 1:13.0.0.28-0.1.ea.rolling.1
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_31_Mass_Rebuild
 
