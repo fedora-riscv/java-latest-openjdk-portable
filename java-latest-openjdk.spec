@@ -211,9 +211,9 @@
 # but in time of bootstrap of next jdk, it is majorver-1, 
 # and this it is better to change it here, on single place
 %global buildjdkver 13
-# Used via new version scheme. JDK 11 was
-# GA'ed in March 2019 => 19.3
-%global vendor_version_string 19.3
+# Used via new version scheme. JDK 13 was
+# GA'ed in September 2019 => 19.9
+%global vendor_version_string 19.9
 # We don't add any LTS designator for STS packages (this package).
 # Neither for Fedora nor EPEL which would have %%{rhel} macro defined.
  %global lts_designator ""
@@ -225,7 +225,7 @@
 %global top_level_dir_name   %{origin}
 %global minorver        0
 %global buildver        33
-%global rpmrelease      1
+%global rpmrelease      2
 # priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 %global priority %( printf '%02d%02d%02d%02d' %{majorver} %{minorver} %{securityver} %{buildver} )
@@ -1852,6 +1852,9 @@ require "copy_jdk_configs.lua"
 
 
 %changelog
+* Mon Sep 30 2019 Severin Gehwolf <sgehwolf@redhat.com> - 1:13.0.0.33-2.rolling
+- Fix vendor version as JDK 13 has been GA'ed September 2019: 19.3 => 19.9
+
 * Wed Aug 14 2019 Petra Alice Mikova <pmikova@redhat.com> - 1:13.0.0.33-1.rolling
 - updated to 13+33 sources
 - added two manpages to file listings (jfr, jaotc)
