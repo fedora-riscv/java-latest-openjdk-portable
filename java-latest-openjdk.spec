@@ -219,7 +219,7 @@
 %global top_level_dir_name   %{origin}
 %global minorver        0
 %global buildver        33
-%global rpmrelease      6
+%global rpmrelease      3
 # priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 %global priority %( printf '%02d%02d%02d%02d' %{majorver} %{minorver} %{securityver} %{buildver} )
@@ -1802,15 +1802,15 @@ require "copy_jdk_configs.lua"
 
 
 %changelog
-* Wed Oct 16 2019 Petra Alice Mikova <pmikova@redhat.com> - 1:13.0.0.33-6.rolling
+* Wed Oct 16 2019 Petra Alice Mikova <pmikova@redhat.com> - 1:13.0.0.33-3.rolling
 - synced up generate tarball script with other OpenJDK packages
 - dropped pr2126-synchronise_elliptic_curves_in_sun_security_ec_namedcurve_with_those_listed_by_nss.patch from the sources
 - regenerated sources with the updated script
 
-* Wed Oct 02 2019 Andrew Hughes <gnu.andrew@redhat.com> - 1:13.0.0.33-5.rolling
+* Wed Oct 02 2019 Andrew Hughes <gnu.andrew@redhat.com> - 1:13.0.0.33-3.rolling
 - Switch to in-tree SunEC code, dropping NSS runtime dependencies and patches to link against it.
 
-* Wed Oct 02 2019 Andrew John Hughes <gnu.andrew@redhat.com> -  1:13.0.0.33-4.rolling
+* Wed Oct 02 2019 Andrew John Hughes <gnu.andrew@redhat.com> -  1:13.0.0.33-3.rolling
 - Drop unnecessary build requirement on gtk3-devel, as OpenJDK searches for Gtk+ at runtime.
 - Add missing build requirement for libXrender-devel, previously masked by Gtk3+ dependency
 - Add missing build requirement for libXrandr-devel, previously masked by Gtk3+ dependency
