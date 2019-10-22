@@ -200,7 +200,7 @@
 
 # New Version-String scheme-style defines
 %global majorver 13
-%global securityver 0
+%global securityver 1
 # buildjdkver is usually same as %%{majorver},
 # but in time of bootstrap of next jdk, it is majorver-1, 
 # and this it is better to change it here, on single place
@@ -218,8 +218,8 @@
 %global origin_nice     OpenJDK
 %global top_level_dir_name   %{origin}
 %global minorver        0
-%global buildver        33
-%global rpmrelease      3
+%global buildver        9
+%global rpmrelease      1
 # priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 %global priority %( printf '%02d%02d%02d%02d' %{majorver} %{minorver} %{securityver} %{buildver} )
@@ -1003,7 +1003,7 @@ URL:      http://openjdk.java.net/
 
 # to regenerate source0 (jdk) and source8 (jdk's taspets) run update_package.sh
 # update_package.sh contains hard-coded repos, revisions, tags, and projects to regenerate the source archives
-Source0: jdk-jdk%{majorver}-jdk-%{majorver}+%{buildver}.tar.xz
+Source0: jdk-updates-jdk13u-jdk-%{majorver}.%{minorver}.%{securityver}+%{buildver}.tar.xz
 Source8: systemtap_3.2_tapsets_hg-icedtea8-9d464368e06d.tar.xz
 
 # Desktop files. Adapted from IcedTea
@@ -1589,7 +1589,7 @@ if ! echo $suffix | grep -q "debug" ; then
   # Install Javadoc documentation
   install -d -m 755 $RPM_BUILD_ROOT%{_javadocdir}
   cp -a %{buildoutputdir -- $suffix}/images/docs $RPM_BUILD_ROOT%{_javadocdir}/%{uniquejavadocdir -- $suffix}
-  cp -a %{buildoutputdir -- $suffix}/bundles/jdk-%{majorver}%{ea_designator_zip}+%{buildver}%{lts_designator_zip}-docs.zip $RPM_BUILD_ROOT%{_javadocdir}/%{uniquejavadocdir -- $suffix}.zip
+  cp -a %{buildoutputdir -- $suffix}/bundles/jdk-%{majorver}.%{minorver}.%{securityver}%{ea_designator_zip}+%{buildver}%{lts_designator_zip}-docs.zip $RPM_BUILD_ROOT%{_javadocdir}/%{uniquejavadocdir -- $suffix}.zip
 fi
 
 # Install icons and menu entries
@@ -1802,6 +1802,9 @@ require "copy_jdk_configs.lua"
 
 
 %changelog
+* Mon Oct 21 2019 Petra Alice Mikova <pmikova@redhat.com> - 1:13.0.1.9-1.rolling
+- Updated to October 2019 CPU sources
+
 * Wed Oct 16 2019 Petra Alice Mikova <pmikova@redhat.com> - 1:13.0.0.33-3.rolling
 - synced up generate tarball script with other OpenJDK packages
 - dropped pr2126-synchronise_elliptic_curves_in_sun_security_ec_namedcurve_with_those_listed_by_nss.patch from the sources
