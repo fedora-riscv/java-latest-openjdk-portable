@@ -1040,8 +1040,21 @@ Patch3:    rh649512-remove_uses_of_far_in_jpeg_libjpeg_turbo_1_4_compat_for_jdk1
 Patch4:    pr3183-rh1340845-support_fedora_rhel_system_crypto_policy.patch
 # Depend on pcs-lite-libs instead of pcs-lite-devel as this is only in optional repo
 Patch6: rh1684077-openjdk_should_depend_on_pcsc-lite-libs_instead_of_pcsc-lite-devel.patch
+
+#############################################
+#
+# Patches appearing in 13.0.2
+#
+# This section includes patches which are present
+# in the listed OpenJDK 13u release and should be
+# able to be removed once that release is out
+# and used by this RPM.
+#############################################
+
 Patch7: jdk8231405_guarantee_d_nonequals_null_failed_null_dominator_info.patch
 Patch8: jdk8231583_fix_register_clash_in_sbsa_resolve_forwarding_pointer_borrowing.patch
+
+#############################################
 
 BuildRequires: autoconf
 BuildRequires: automake
