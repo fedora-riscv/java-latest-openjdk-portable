@@ -1051,8 +1051,8 @@ Patch6: rh1684077-openjdk_should_depend_on_pcsc-lite-libs_instead_of_pcsc-lite-d
 # and used by this RPM.
 #############################################
 
-Patch7: jdk8231405_guarantee_d_nonequals_null_failed_null_dominator_info.patch
-Patch8: jdk8231583_fix_register_clash_in_sbsa_resolve_forwarding_pointer_borrowing.patch
+Patch7: jdk8231405-guarantee_d_nonequals_null_failed_null_dominator_info.patch
+Patch8: jdk8231583-fix_register_clash_in_sbsa_resolve_forwarding_pointer_borrowing.patch
 
 #############################################
 
