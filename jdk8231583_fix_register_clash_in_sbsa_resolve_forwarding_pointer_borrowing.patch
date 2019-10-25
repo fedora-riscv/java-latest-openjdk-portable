@@ -1,0 +1,47 @@
+
+# HG changeset patch
+# User shade
+# Date 1569859344 -7200
+# Node ID 6f85097da2487529811f31ea779d9004f63725c6
+# Parent  3873cd2a203484b5a6106c7262f9a21070915a6d
+#8231583: Shenandoah: Fix register clash in SBSA::resolve_forwarding_pointer() borrowing
+#Reviewed-by: rkennke
+
+diff -r 3873cd2a2034 -r 6f85097da248 src/hotspot/cpu/aarch64/gc/shenandoah/shenandoahBarrierSetAssembler_aarch64.cpp
+--- a/src/hotspot/cpu/aarch64/gc/shenandoah/shenandoahBarrierSetAssembler_aarch64.cpp	Thu Sep 19 20:26:51 2019 +0200
++++ b/src/hotspot/cpu/aarch64/gc/shenandoah/shenandoahBarrierSetAssembler_aarch64.cpp	Mon Sep 30 18:02:24 2019 +0200
+@@ -236,9 +236,14 @@
+   if (borrow_reg) {
+     // No free registers available. Make one useful.
+     tmp = rscratch1;
++    if (tmp == dst) {
++      tmp = rscratch2;
++    }
+     __ push(RegSet::of(tmp), sp);
+   }
+ 
++  assert_different_registers(tmp, dst);
++
+   Label done;
+   __ ldr(tmp, Address(dst, oopDesc::mark_offset_in_bytes()));
+   __ eon(tmp, tmp, zr);
+diff -r 3873cd2a2034 -r 6f85097da248 src/hotspot/cpu/x86/gc/shenandoah/shenandoahBarrierSetAssembler_x86.cpp
+--- a/src/hotspot/cpu/x86/gc/shenandoah/shenandoahBarrierSetAssembler_x86.cpp	Thu Sep 19 20:26:51 2019 +0200
++++ b/src/hotspot/cpu/x86/gc/shenandoah/shenandoahBarrierSetAssembler_x86.cpp	Mon Sep 30 18:02:24 2019 +0200
+@@ -344,9 +344,14 @@
+   if (borrow_reg) {
+     // No free registers available. Make one useful.
+     tmp = LP64_ONLY(rscratch1) NOT_LP64(rdx);
++    if (tmp == dst) {
++      tmp = LP64_ONLY(rscratch2) NOT_LP64(rcx);
++    }
+     __ push(tmp);
+   }
+ 
++  assert_different_registers(dst, tmp);
++
+   Label done;
+   __ movptr(tmp, Address(dst, oopDesc::mark_offset_in_bytes()));
+   __ notptr(tmp);
+
+

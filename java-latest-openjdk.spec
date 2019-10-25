@@ -219,7 +219,7 @@
 %global top_level_dir_name   %{origin}
 %global minorver        0
 %global buildver        9
-%global rpmrelease      1
+%global rpmrelease      2
 # priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 %global priority %( printf '%02d%02d%02d%02d' %{majorver} %{minorver} %{securityver} %{buildver} )
@@ -1003,7 +1003,7 @@ URL:      http://openjdk.java.net/
 
 # to regenerate source0 (jdk) and source8 (jdk's taspets) run update_package.sh
 # update_package.sh contains hard-coded repos, revisions, tags, and projects to regenerate the source archives
-Source0: jdk-updates-jdk13u-jdk-%{majorver}.%{minorver}.%{securityver}+%{buildver}.tar.xz
+Source0: jdk-updates-jdk%{majorver}u-jdk-%{majorver}.%{minorver}.%{securityver}+%{buildver}.tar.xz
 Source8: systemtap_3.2_tapsets_hg-icedtea8-9d464368e06d.tar.xz
 
 # Desktop files. Adapted from IcedTea
@@ -1040,6 +1040,8 @@ Patch3:    rh649512-remove_uses_of_far_in_jpeg_libjpeg_turbo_1_4_compat_for_jdk1
 Patch4:    pr3183-rh1340845-support_fedora_rhel_system_crypto_policy.patch
 # Depend on pcs-lite-libs instead of pcs-lite-devel as this is only in optional repo
 Patch6: rh1684077-openjdk_should_depend_on_pcsc-lite-libs_instead_of_pcsc-lite-devel.patch
+Patch7: jdk8231405_guarantee_d_nonequals_null_failed_null_dominator_info.patch
+Patch8: jdk8231583_fix_register_clash_in_sbsa_resolve_forwarding_pointer_borrowing.patch
 
 BuildRequires: autoconf
 BuildRequires: automake
@@ -1266,6 +1268,8 @@ pushd %{top_level_dir_name}
 %patch3 -p1
 %patch4 -p1
 %patch6 -p1
+%patch7 -p1
+%patch8 -p1
 popd # openjdk
 
 %patch1000
@@ -1802,6 +1806,11 @@ require "copy_jdk_configs.lua"
 
 
 %changelog
+* Fri Oct 25 2019 Petra Alice Mikova <pmikova@redhat.com> - 1:13.0.1.9-2.rolling
+- Fixed hardcoded major version in jdk13u to macro
+- added jdk8231405_guarantee_d_nonequals_null_failed_null_dominator_info.patch
+- added jdk8231583_fix_register_clash_in_sbsa_resolve_forwarding_pointer_borrowing.patch
+
 * Mon Oct 21 2019 Petra Alice Mikova <pmikova@redhat.com> - 1:13.0.1.9-1.rolling
 - Updated to October 2019 CPU sources
 
