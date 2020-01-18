@@ -200,7 +200,7 @@
 
 # New Version-String scheme-style defines
 %global majorver 13
-%global securityver 1
+%global securityver 2
 # buildjdkver is usually same as %%{majorver},
 # but in time of bootstrap of next jdk, it is majorver-1, 
 # and this it is better to change it here, on single place
@@ -218,8 +218,8 @@
 %global origin_nice     OpenJDK
 %global top_level_dir_name   %{origin}
 %global minorver        0
-%global buildver        9
-%global rpmrelease      2
+%global buildver        8
+%global rpmrelease      1
 # priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 %global priority %( printf '%02d%02d%02d%02d' %{majorver} %{minorver} %{securityver} %{buildver} )
@@ -1041,21 +1041,6 @@ Patch4:    pr3183-rh1340845-support_fedora_rhel_system_crypto_policy.patch
 # Depend on pcs-lite-libs instead of pcs-lite-devel as this is only in optional repo
 Patch6: rh1684077-openjdk_should_depend_on_pcsc-lite-libs_instead_of_pcsc-lite-devel.patch
 
-#############################################
-#
-# Patches appearing in 13.0.2
-#
-# This section includes patches which are present
-# in the listed OpenJDK 13u release and should be
-# able to be removed once that release is out
-# and used by this RPM.
-#############################################
-
-Patch7: jdk8231405-guarantee_d_nonequals_null_failed_null_dominator_info.patch
-Patch8: jdk8231583-fix_register_clash_in_sbsa_resolve_forwarding_pointer_borrowing.patch
-
-#############################################
-
 BuildRequires: autoconf
 BuildRequires: automake
 BuildRequires: alsa-lib-devel
@@ -1281,8 +1266,6 @@ pushd %{top_level_dir_name}
 %patch3 -p1
 %patch4 -p1
 %patch6 -p1
-%patch7 -p1
-%patch8 -p1
 popd # openjdk
 
 %patch1000
@@ -1819,6 +1802,11 @@ require "copy_jdk_configs.lua"
 
 
 %changelog
+* Fri Jan 17 2020 Petra Alice Mikova <pmikova@redhat.com> - 1:13.0.2.8-1.rolling
+- removed patch jdk8231405_guarantee_d_nonequals_null_failed_null_dominator_info.patch
+- removed patch jdk8231583_fix_register_clash_in_sbsa_resolve_forwarding_pointer_borrowing.patch
+- updated sources to the 13.0.2+8 tag
+
 * Fri Oct 25 2019 Petra Alice Mikova <pmikova@redhat.com> - 1:13.0.1.9-2.rolling
 - Fixed hardcoded major version in jdk13u to macro
 - added jdk8231405_guarantee_d_nonequals_null_failed_null_dominator_info.patch
