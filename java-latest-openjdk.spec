@@ -969,7 +969,7 @@ Version: %{newjavaver}.%{buildver}
 # This package needs `.rolling` as part of Release so as to not conflict on install with
 # java-X-openjdk. I.e. when latest rolling release is also an LTS release packaged as
 # java-X-openjdk. See: https://bugzilla.redhat.com/show_bug.cgi?id=1647298
-Release: %{?eaprefix}%{rpmrelease}%{?extraver}.rolling%{?dist}
+Release: %{?eaprefix}%{rpmrelease}%{?extraver}.rolling%{?dist}.1
 # java-1.5.0-ibm from jpackage.org set Epoch to 1 for unknown reasons
 # and this change was brought into RHEL-4. java-1.5.0-ibm packages
 # also included the epoch in their virtual provides. This created a
@@ -1802,6 +1802,9 @@ require "copy_jdk_configs.lua"
 
 
 %changelog
+* Wed Jan 29 2020 Fedora Release Engineering <releng@fedoraproject.org> - 1:13.0.2.8-1.rolling.1
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_32_Mass_Rebuild
+
 * Fri Jan 17 2020 Petra Alice Mikova <pmikova@redhat.com> - 1:13.0.2.8-1.rolling
 - removed patch jdk8231405_guarantee_d_nonequals_null_failed_null_dominator_info.patch
 - removed patch jdk8231583_fix_register_clash_in_sbsa_resolve_forwarding_pointer_borrowing.patch
