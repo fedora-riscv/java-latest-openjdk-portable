@@ -219,7 +219,7 @@
 %global top_level_dir_name   %{origin}
 %global minorver        0
 %global buildver        8
-%global rpmrelease      1
+%global rpmrelease      2
 # priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 %global priority %( printf '%02d%02d%02d%02d' %{majorver} %{minorver} %{securityver} %{buildver} )
@@ -969,7 +969,7 @@ Version: %{newjavaver}.%{buildver}
 # This package needs `.rolling` as part of Release so as to not conflict on install with
 # java-X-openjdk. I.e. when latest rolling release is also an LTS release packaged as
 # java-X-openjdk. See: https://bugzilla.redhat.com/show_bug.cgi?id=1647298
-Release: %{?eaprefix}%{rpmrelease}%{?extraver}.rolling%{?dist}.1
+Release: %{?eaprefix}%{rpmrelease}%{?extraver}.rolling%{?dist}
 # java-1.5.0-ibm from jpackage.org set Epoch to 1 for unknown reasons
 # and this change was brought into RHEL-4. java-1.5.0-ibm packages
 # also included the epoch in their virtual provides. This created a
@@ -1802,6 +1802,9 @@ require "copy_jdk_configs.lua"
 
 
 %changelog
+* Tue Feb 04 2020 Petra Alice Mikova <pmikova@redhat.com> - 1:13.0.2.8-2.rolling
+- fix Release, as it was broken by last rpmdev-bumpspec
+
 * Wed Jan 29 2020 Fedora Release Engineering <releng@fedoraproject.org> - 1:13.0.2.8-1.rolling.1
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_32_Mass_Rebuild
 
