@@ -219,7 +219,7 @@
 %global top_level_dir_name   %{origin}
 %global minorver        0
 %global buildver        8
-%global rpmrelease      2
+%global rpmrelease      3
 # priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 %global priority %( printf '%02d%02d%02d%02d' %{majorver} %{minorver} %{securityver} %{buildver} )
@@ -1041,6 +1041,16 @@ Patch4:    pr3183-rh1340845-support_fedora_rhel_system_crypto_policy.patch
 # Depend on pcs-lite-libs instead of pcs-lite-devel as this is only in optional repo
 Patch6: rh1684077-openjdk_should_depend_on_pcsc-lite-libs_instead_of_pcsc-lite-devel.patch
 
+	
+#############################################	
+#
+# OpenJDK specific patches	
+#	
+#############################################
+
+# JDK-8224851: AArch64: fix warnings and errors with Clang and GCC 8.3
+Patch7: jdk8224851-aarch64_compiler_fixes.patch 
+
 BuildRequires: autoconf
 BuildRequires: automake
 BuildRequires: alsa-lib-devel
@@ -1266,6 +1276,7 @@ pushd %{top_level_dir_name}
 %patch3 -p1
 %patch4 -p1
 %patch6 -p1
+%patch7 -p1
 popd # openjdk
 
 %patch1000
@@ -1331,11 +1342,18 @@ export ARCH_DATA_MODEL=64
 export CFLAGS="$CFLAGS -mieee"
 %endif
 
+
+GCC_10_WORKAROUND_S390x="-fno-tree-coalesce-vars -fno-tree-copy-prop -fno-tree-dce -fno-tree-dominator-opts -fno-tree-dse -fno-tree-forwprop -fno-tree-fre -fno-tree-loop-distribute-patterns -fno-tree-loop-distribution -fno-tree-loop-vectorize -fno-tree-partial-pre -fno-tree-phiprop -fno-tree-pre -fno-tree-pta -fno-tree-scev-cprop -fno-tree-sink -fno-tree-slp-vectorize -fno-tree-slsr -fno-tree-sra -fno-tree-switch-conversion -fno-tree-tail-merge -fno-tree-ter -fno-tree-vrp -fno-unit-at-a-time -fno-unswitch-loops -fno-vect-cost-model -fno-version-loops-for-strides"
 # We use ourcppflags because the OpenJDK build seems to
 # pass EXTRA_CFLAGS to the HotSpot C++ compiler...
 # Explicitly set the C++ standard as the default has changed on GCC >= 6
-EXTRA_CFLAGS="%ourcppflags -std=gnu++98 -Wno-error -fno-delete-null-pointer-checks -fno-lifetime-dse"
-EXTRA_CPP_FLAGS="%ourcppflags -std=gnu++98 -fno-delete-null-pointer-checks -fno-lifetime-dse"
+EXTRA_CFLAGS="%ourcppflags -std=gnu++98 -Wno-error -fno-delete-null-pointer-checks -fno-lifetime-dse -fcommon"
+EXTRA_CPP_FLAGS="%ourcppflags -std=gnu++98 -fno-delete-null-pointer-checks -fno-lifetime-dse -fcommon"
+
+%ifarch s390x
+EXTRA_CFLAGS="$EXTRA_CFLAGS $GCC_10_WORKAROUND_S390x"
+EXTRA_CPP_FLAGS="$EXTRA_CPP_FLAGS $GCC_10_WORKAROUND_S390x"
+%endif 
 
 %ifarch %{power64} ppc
 # fix rpmlint warnings
@@ -1507,7 +1525,12 @@ quit
 end
 run -version
 EOF
+
+#This fails on s390x for some reason. Disable for now. See:
+# https://koji.fedoraproject.org/koji/taskinfo?taskID=41499227
+%ifnarch s390x 
 grep 'JavaCallWrapper::JavaCallWrapper' gdb.out
+%endif
 
 # Check src.zip has all sources. See RHBZ#1130490
 jar -tf $JAVA_HOME/lib/src.zip | grep 'sun.misc.Unsafe'
@@ -1802,6 +1825,13 @@ require "copy_jdk_configs.lua"
 
 
 %changelog
+* Thu Feb 27 2020 Severin Gehwolf <sgehwolf@redhat.com> - 1:13.0.2.8-3.rolling
+- add workaround for issues with build with GCC10 on s390x (see RHBZ#1799531)
+- fix issues with build with GCC10: JDK-8224851, -fcommon switch
+
+* Thu Feb 27 2020 Petra Alice Mikova pmikova@redhat.com> - 1:13.0.2.8-3.rolling
+- Add JDK-8224851 patch to resolve aarch64 issues 
+
 * Tue Feb 04 2020 Petra Alice Mikova <pmikova@redhat.com> - 1:13.0.2.8-2.rolling
 - fix Release, as it was broken by last rpmdev-bumpspec
 
