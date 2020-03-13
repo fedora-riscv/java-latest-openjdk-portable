@@ -219,7 +219,7 @@
 %global top_level_dir_name   %{origin}
 %global minorver        0
 %global buildver        8
-%global rpmrelease      3
+%global rpmrelease      4
 # priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 %global priority %( printf '%02d%02d%02d%02d' %{majorver} %{minorver} %{securityver} %{buildver} )
@@ -1050,6 +1050,8 @@ Patch6: rh1684077-openjdk_should_depend_on_pcsc-lite-libs_instead_of_pcsc-lite-d
 
 # JDK-8224851: AArch64: fix warnings and errors with Clang and GCC 8.3
 Patch7: jdk8224851-aarch64_compiler_fixes.patch 
+# JDK-8237879: make 4.3 breaks build
+Patch8: jdk8237879-make_4_3_build_fixes.patch
 
 BuildRequires: autoconf
 BuildRequires: automake
@@ -1277,6 +1279,7 @@ pushd %{top_level_dir_name}
 %patch4 -p1
 %patch6 -p1
 %patch7 -p1
+%patch8 -p1
 popd # openjdk
 
 %patch1000
@@ -1825,6 +1828,9 @@ require "copy_jdk_configs.lua"
 
 
 %changelog
+* Thu Mar 12 2020 Petra Alice Mikova <pmikova@redhat.com> - 1:13.0.2.8-4.rolling
+- add patch for build issues with make 4.3
+
 * Thu Feb 27 2020 Severin Gehwolf <sgehwolf@redhat.com> - 1:13.0.2.8-3.rolling
 - add workaround for issues with build with GCC10 on s390x (see RHBZ#1799531)
 - fix issues with build with GCC10: JDK-8224851, -fcommon switch
