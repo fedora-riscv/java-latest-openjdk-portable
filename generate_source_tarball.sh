@@ -4,7 +4,7 @@
 # Example:
 # When used from local repo set REPO_ROOT pointing to file:// with your repo
 # If your local repo follows upstream forests conventions, it may be enough to set OPENJDK_URL
-# If you want to use a local copy of patch PR3755, set the path to it in the PR3755 variable
+# If you want to use a local copy of patch PR3782, set the path to it in the PR3782 variable
 #
 # In any case you have to set PROJECT_NAME REPO_NAME and VERSION. eg:
 # PROJECT_NAME=jdk
@@ -26,9 +26,9 @@
 # level folder, name is created, based on parameter
 #
 
-if [ ! "x$PR3755" = "x" ] ; then
-  if [ ! -f "$PR3755" ] ; then
-    echo "You have specified PR3755 as $PR3755 but it does not exist. Exiting"
+if [ ! "x$PR3782" = "x" ] ; then
+  if [ ! -f "$PR3782" ] ; then
+    echo "You have specified PR3782 as $PR3782 but it does not exist. Exiting"
     exit 1
   fi
 fi
@@ -47,7 +47,7 @@ if [ "x$1" = "xhelp" ] ; then
     echo "COMPRESSION - the compression type to use (optional; defaults to ${COMPRESSION_DEFAULT})"
     echo "FILE_NAME_ROOT - name of the archive, minus extensions (optional; defaults to PROJECT_NAME-REPO_NAME-VERSION)"
     echo "TO_COMPRESS - what part of clone to pack (default is openjdk)"
-    echo "PR3755 - the path to the PR3755 patch to apply (optional; downloaded if unavailable)"
+    echo "PR3782 - the path to the PR3782 patch to apply (optional; downloaded if unavailable)"
     exit 1;
 fi
 
@@ -125,18 +125,18 @@ pushd "${FILE_NAME_ROOT}"
 	    rm -vf ${CRYPTO_PATH}/ecp_224.c
 
             echo "Syncing EC list with NSS"
-            if [ "x$PR3755" = "x" ] ; then
+            if [ "x$PR3782" = "x" ] ; then
                 # originally for 8:
-                # get pr3755.patch (from http://icedtea.classpath.org/hg/icedtea11) from most correct tag
-                # Do not push it or publish it (see http://icedtea.classpath.org/bugzilla/show_bug.cgi?id=3755)
-		echo "PR3755 not found. Downloading..."
-		wget http://icedtea.classpath.org/hg/icedtea13/raw-file/tip/patches/pr3755.patch
-	        echo "Applying ${PWD}/pr3755.patch"
-		patch -Np1 < pr3755.patch
-		rm pr3755.patch
+                # get pr3782.patch (from http://icedtea.classpath.org/hg/icedtea14) from most correct tag
+                # Do not push it or publish it (see http://icedtea.classpath.org/bugzilla/show_bug.cgi?id=3782)
+		echo "PR3782 not found. Downloading..."
+		wget https://icedtea.classpath.org/hg/icedtea14/raw-file/tip/patches/pr3782.patch
+	        echo "Applying ${PWD}/pr3782.patch"
+		patch -Np1 < pr3782.patch
+		rm pr3782.patch
 	    else
-		echo "Applying ${PR3755}"
-		patch -Np1 < $PR3755
+		echo "Applying ${PR3782}"
+		patch -Np1 < $PR3782
             fi;
             find . -name '*.orig' -exec rm -vf '{}' ';'
         popd

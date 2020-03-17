@@ -199,8 +199,8 @@
 %endif
 
 # New Version-String scheme-style defines
-%global majorver 13
-%global securityver 2
+%global majorver 14
+%global securityver 0
 # buildjdkver is usually same as %%{majorver},
 # but in time of bootstrap of next jdk, it is majorver-1, 
 # and this it is better to change it here, on single place
@@ -218,8 +218,8 @@
 %global origin_nice     OpenJDK
 %global top_level_dir_name   %{origin}
 %global minorver        0
-%global buildver        8
-%global rpmrelease      4
+%global buildver        36
+%global rpmrelease      1
 # priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 %global priority %( printf '%02d%02d%02d%02d' %{majorver} %{minorver} %{securityver} %{buildver} )
@@ -263,7 +263,7 @@
 # fix for https://bugzilla.redhat.com/show_bug.cgi?id=1111349
 #         https://bugzilla.redhat.com/show_bug.cgi?id=1590796#c14
 #         https://bugzilla.redhat.com/show_bug.cgi?id=1655938
-%global _privatelibs libsplashscreen[.]so.*|libawt_xawt[.]so.*|libjli[.]so.*|libattach[.]so.*|libawt[.]so.*|libextnet[.]so.*|libawt_headless[.]so.*|libdt_socket[.]so.*|libfontmanager[.]so.*|libinstrument[.]so.*|libj2gss[.]so.*|libj2pcsc[.]so.*|libj2pkcs11[.]so.*|libjaas[.]so.*|libjavajpeg[.]so.*|libjdwp[.]so.*|libjimage[.]so.*|libjsound[.]so.*|liblcms[.]so.*|libmanagement[.]so.*|libmanagement_agent[.]so.*|libmanagement_ext[.]so.*|libmlib_image[.]so.*|libnet[.]so.*|libnio[.]so.*|libprefs[.]so.*|librmi[.]so.*|libsaproc[.]so.*|libsctp[.]so.*|libsunec[.]so.*|libunpack[.]so.*|libzip[.]so.*
+%global _privatelibs libsplashscreen[.]so.*|libawt_xawt[.]so.*|libjli[.]so.*|libattach[.]so.*|libawt[.]so.*|libextnet[.]so.*|libawt_headless[.]so.*|libdt_socket[.]so.*|libfontmanager[.]so.*|libinstrument[.]so.*|libj2gss[.]so.*|libj2pcsc[.]so.*|libj2pkcs11[.]so.*|libjaas[.]so.*|libjavajpeg[.]so.*|libjdwp[.]so.*|libjimage[.]so.*|libjsound[.]so.*|liblcms[.]so.*|libmanagement[.]so.*|libmanagement_agent[.]so.*|libmanagement_ext[.]so.*|libmlib_image[.]so.*|libnet[.]so.*|libnio[.]so.*|libprefs[.]so.*|librmi[.]so.*|libsaproc[.]so.*|libsctp[.]so.*|libsunec[.]so.*|libzip[.]so.*
 %global _publiclibs libjawt[.]so.*|libjava[.]so.*|libjvm[.]so.*|libverify[.]so.*|libjsig[.]so.*
 %if %is_system_jdk
 %global __provides_exclude ^(%{_privatelibs})$
@@ -332,24 +332,18 @@ alternatives \\
   --slave %{_jvmdir}/jre jre %{_jvmdir}/%{sdkdir -- %{?1}} \\
   --slave %{_bindir}/jjs jjs %{jrebindir -- %{?1}}/jjs \\
   --slave %{_bindir}/keytool keytool %{jrebindir -- %{?1}}/keytool \\
-  --slave %{_bindir}/pack200 pack200 %{jrebindir -- %{?1}}/pack200 \\
   --slave %{_bindir}/rmid rmid %{jrebindir -- %{?1}}/rmid \\
   --slave %{_bindir}/rmiregistry rmiregistry %{jrebindir -- %{?1}}/rmiregistry \\
-  --slave %{_bindir}/unpack200 unpack200 %{jrebindir -- %{?1}}/unpack200 \\
   --slave %{_mandir}/man1/java.1$ext java.1$ext \\
   %{_mandir}/man1/java-%{uniquesuffix -- %{?1}}.1$ext \\
   --slave %{_mandir}/man1/jjs.1$ext jjs.1$ext \\
   %{_mandir}/man1/jjs-%{uniquesuffix -- %{?1}}.1$ext \\
   --slave %{_mandir}/man1/keytool.1$ext keytool.1$ext \\
   %{_mandir}/man1/keytool-%{uniquesuffix -- %{?1}}.1$ext \\
-  --slave %{_mandir}/man1/pack200.1$ext pack200.1$ext \\
-  %{_mandir}/man1/pack200-%{uniquesuffix -- %{?1}}.1$ext \\
   --slave %{_mandir}/man1/rmid.1$ext rmid.1$ext \\
   %{_mandir}/man1/rmid-%{uniquesuffix -- %{?1}}.1$ext \\
   --slave %{_mandir}/man1/rmiregistry.1$ext rmiregistry.1$ext \\
   %{_mandir}/man1/rmiregistry-%{uniquesuffix -- %{?1}}.1$ext \\
-  --slave %{_mandir}/man1/unpack200.1$ext unpack200.1$ext \\
-  %{_mandir}/man1/unpack200-%{uniquesuffix -- %{?1}}.1$ext
 
 for X in %{origin} %{javaver} ; do
   alternatives --install %{_jvmdir}/jre-"$X" jre_"$X" %{_jvmdir}/%{sdkdir -- %{?1}} $PRIORITY --family %{name}.%{_arch}
@@ -428,6 +422,7 @@ alternatives \\
   --slave %{_bindir}/jinfo jinfo %{sdkbindir -- %{?1}}/jinfo \\
   --slave %{_bindir}/jmap jmap %{sdkbindir -- %{?1}}/jmap \\
   --slave %{_bindir}/jps jps %{sdkbindir -- %{?1}}/jps \\
+  --slave %{_bindir}/jpackage jpackage %{sdkbindir -- %{?1}}/jpackage \\
   --slave %{_bindir}/jrunscript jrunscript %{sdkbindir -- %{?1}}/jrunscript \\
   --slave %{_bindir}/jshell jshell %{sdkbindir -- %{?1}}/jshell \\
   --slave %{_bindir}/jstack jstack %{sdkbindir -- %{?1}}/jstack \\
@@ -459,6 +454,8 @@ alternatives \\
   %{_mandir}/man1/jmap-%{uniquesuffix -- %{?1}}.1$ext \\
   --slave %{_mandir}/man1/jps.1$ext jps.1$ext \\
   %{_mandir}/man1/jps-%{uniquesuffix -- %{?1}}.1$ext \\
+  --slave %{_mandir}/man1/jpackage.1$ext jpackage.1$ext \\
+  %{_mandir}/man1/jpackage-%{uniquesuffix -- %{?1}}.1$ext \\ 
   --slave %{_mandir}/man1/jrunscript.1$ext jrunscript.1$ext \\
   %{_mandir}/man1/jrunscript-%{uniquesuffix -- %{?1}}.1$ext \\
   --slave %{_mandir}/man1/jstack.1$ext jstack.1$ext \\
@@ -559,10 +556,8 @@ exit 0
 %{_jvmdir}/%{sdkdir -- %{?1}}/bin/java
 %{_jvmdir}/%{sdkdir -- %{?1}}/bin/jjs
 %{_jvmdir}/%{sdkdir -- %{?1}}/bin/keytool
-%{_jvmdir}/%{sdkdir -- %{?1}}/bin/pack200
 %{_jvmdir}/%{sdkdir -- %{?1}}/bin/rmid
 %{_jvmdir}/%{sdkdir -- %{?1}}/bin/rmiregistry
-%{_jvmdir}/%{sdkdir -- %{?1}}/bin/unpack200
 %dir %{_jvmdir}/%{sdkdir -- %{?1}}/lib
 %ifarch %{jit_arches}
 %{_jvmdir}/%{sdkdir -- %{?1}}/lib/classlist
@@ -610,7 +605,6 @@ exit 0
 %endif
 %{_jvmdir}/%{sdkdir -- %{?1}}/lib/libsctp.so
 %{_jvmdir}/%{sdkdir -- %{?1}}/lib/libsunec.so
-%{_jvmdir}/%{sdkdir -- %{?1}}/lib/libunpack.so
 %{_jvmdir}/%{sdkdir -- %{?1}}/lib/libverify.so
 %{_jvmdir}/%{sdkdir -- %{?1}}/lib/libzip.so
 %dir %{_jvmdir}/%{sdkdir -- %{?1}}/lib/jfr
@@ -619,10 +613,8 @@ exit 0
 %{_mandir}/man1/java-%{uniquesuffix -- %{?1}}.1*
 %{_mandir}/man1/jjs-%{uniquesuffix -- %{?1}}.1*
 %{_mandir}/man1/keytool-%{uniquesuffix -- %{?1}}.1*
-%{_mandir}/man1/pack200-%{uniquesuffix -- %{?1}}.1*
 %{_mandir}/man1/rmid-%{uniquesuffix -- %{?1}}.1*
 %{_mandir}/man1/rmiregistry-%{uniquesuffix -- %{?1}}.1*
-%{_mandir}/man1/unpack200-%{uniquesuffix -- %{?1}}.1*
 %{_jvmdir}/%{sdkdir -- %{?1}}/lib/server/
 %{_jvmdir}/%{sdkdir -- %{?1}}/lib/client/
 %ifarch %{jit_arches}
@@ -709,6 +701,7 @@ exit 0
 %{_jvmdir}/%{sdkdir -- %{?1}}/bin/jmap
 %{_jvmdir}/%{sdkdir -- %{?1}}/bin/jmod
 %{_jvmdir}/%{sdkdir -- %{?1}}/bin/jps
+%{_jvmdir}/%{sdkdir -- %{?1}}/bin/jpackage
 %{_jvmdir}/%{sdkdir -- %{?1}}/bin/jrunscript
 %{_jvmdir}/%{sdkdir -- %{?1}}/bin/jshell
 %{_jvmdir}/%{sdkdir -- %{?1}}/bin/jstack
@@ -737,6 +730,7 @@ exit 0
 %{_mandir}/man1/jinfo-%{uniquesuffix -- %{?1}}.1*
 %{_mandir}/man1/jmap-%{uniquesuffix -- %{?1}}.1*
 %{_mandir}/man1/jps-%{uniquesuffix -- %{?1}}.1*
+%{_mandir}/man1/jpackage-%{uniquesuffix -- %{?1}}.1*
 %{_mandir}/man1/jrunscript-%{uniquesuffix -- %{?1}}.1*
 %{_mandir}/man1/jstack-%{uniquesuffix -- %{?1}}.1*
 %{_mandir}/man1/jstat-%{uniquesuffix -- %{?1}}.1*
@@ -1003,7 +997,7 @@ URL:      http://openjdk.java.net/
 
 # to regenerate source0 (jdk) and source8 (jdk's taspets) run update_package.sh
 # update_package.sh contains hard-coded repos, revisions, tags, and projects to regenerate the source archives
-Source0: jdk-updates-jdk%{majorver}u-jdk-%{majorver}.%{minorver}.%{securityver}+%{buildver}.tar.xz
+Source0: jdk-jdk%{majorver}-jdk-%{majorver}+%{buildver}.tar.xz
 Source8: systemtap_3.2_tapsets_hg-icedtea8-9d464368e06d.tar.xz
 
 # Desktop files. Adapted from IcedTea
@@ -1048,10 +1042,8 @@ Patch6: rh1684077-openjdk_should_depend_on_pcsc-lite-libs_instead_of_pcsc-lite-d
 #	
 #############################################
 
-# JDK-8224851: AArch64: fix warnings and errors with Clang and GCC 8.3
-Patch7: jdk8224851-aarch64_compiler_fixes.patch 
 # JDK-8237879: make 4.3 breaks build
-Patch8: jdk8237879-make_4_3_build_fixes.patch
+Patch7: jdk8237879-make_4_3_build_fixes.patch
 
 BuildRequires: autoconf
 BuildRequires: automake
@@ -1279,7 +1271,6 @@ pushd %{top_level_dir_name}
 %patch4 -p1
 %patch6 -p1
 %patch7 -p1
-%patch8 -p1
 popd # openjdk
 
 %patch1000
@@ -1615,7 +1606,7 @@ if ! echo $suffix | grep -q "debug" ; then
   # Install Javadoc documentation
   install -d -m 755 $RPM_BUILD_ROOT%{_javadocdir}
   cp -a %{buildoutputdir -- $suffix}/images/docs $RPM_BUILD_ROOT%{_javadocdir}/%{uniquejavadocdir -- $suffix}
-  cp -a %{buildoutputdir -- $suffix}/bundles/jdk-%{majorver}.%{minorver}.%{securityver}%{ea_designator_zip}+%{buildver}%{lts_designator_zip}-docs.zip $RPM_BUILD_ROOT%{_javadocdir}/%{uniquejavadocdir -- $suffix}.zip
+  cp -a %{buildoutputdir -- $suffix}/bundles/jdk-%{majorver}%{ea_designator_zip}+%{buildver}%{lts_designator_zip}-docs.zip $RPM_BUILD_ROOT%{_javadocdir}/%{uniquejavadocdir -- $suffix}.zip
 fi
 
 # Install icons and menu entries
@@ -1828,6 +1819,12 @@ require "copy_jdk_configs.lua"
 
 
 %changelog
+* Fri Mar 13 2020 Petra Alice Mikova <pmikova@redhat.com> - 1:14.0.0.36-1.rolling
+- update to jdk 14+36 ga build
+- remove JDK-8224851 patch, as OpenJDK 14 already contains it
+- removed pack200 and unpack200 binaries, slaves, manpages and libunpack.so library
+- added listings for jpackage binary, manpages and added slave records to alternatives
+
 * Thu Mar 12 2020 Petra Alice Mikova <pmikova@redhat.com> - 1:13.0.2.8-4.rolling
 - add patch for build issues with make 4.3
 
