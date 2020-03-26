@@ -219,7 +219,7 @@
 %global top_level_dir_name   %{origin}
 %global minorver        0
 %global buildver        36
-%global rpmrelease      2
+%global rpmrelease      3
 # priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 %global priority %( printf '%02d%02d%02d%02d' %{majorver} %{minorver} %{securityver} %{buildver} )
@@ -1336,18 +1336,11 @@ export ARCH_DATA_MODEL=64
 export CFLAGS="$CFLAGS -mieee"
 %endif
 
-
-GCC_10_WORKAROUND_S390x="-fno-tree-coalesce-vars -fno-tree-copy-prop -fno-tree-dce -fno-tree-dominator-opts -fno-tree-dse -fno-tree-forwprop -fno-tree-fre -fno-tree-loop-distribute-patterns -fno-tree-loop-distribution -fno-tree-loop-vectorize -fno-tree-partial-pre -fno-tree-phiprop -fno-tree-pre -fno-tree-pta -fno-tree-scev-cprop -fno-tree-sink -fno-tree-slp-vectorize -fno-tree-slsr -fno-tree-sra -fno-tree-switch-conversion -fno-tree-tail-merge -fno-tree-ter -fno-tree-vrp -fno-unit-at-a-time -fno-unswitch-loops -fno-vect-cost-model -fno-version-loops-for-strides"
 # We use ourcppflags because the OpenJDK build seems to
 # pass EXTRA_CFLAGS to the HotSpot C++ compiler...
 # Explicitly set the C++ standard as the default has changed on GCC >= 6
 EXTRA_CFLAGS="%ourcppflags -std=gnu++98 -Wno-error -fno-delete-null-pointer-checks -fno-lifetime-dse -fcommon"
 EXTRA_CPP_FLAGS="%ourcppflags -std=gnu++98 -fno-delete-null-pointer-checks -fno-lifetime-dse -fcommon"
-
-%ifarch s390x
-EXTRA_CFLAGS="$EXTRA_CFLAGS $GCC_10_WORKAROUND_S390x"
-EXTRA_CPP_FLAGS="$EXTRA_CPP_FLAGS $GCC_10_WORKAROUND_S390x"
-%endif 
 
 %ifarch %{power64} ppc
 # fix rpmlint warnings
@@ -1819,6 +1812,9 @@ require "copy_jdk_configs.lua"
 
 
 %changelog
+* Tue Mar 24 2020 Petra Alice Mikova <pmikova@redhat.com> - 1:14.0.0.36-3.rolling
+- Remove s390x workaround flags for GCC 10
+
 * Mon Mar 23 2020 Petra Alice Mikova <pmikova@redhat.com> - 1:14.0.0.36-2.rolling
 - removed a whitespace causing fail of postinstall script
 - removed backslashes at the end of alternatives command
