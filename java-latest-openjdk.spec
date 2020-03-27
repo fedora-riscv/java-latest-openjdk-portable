@@ -204,7 +204,7 @@
 # buildjdkver is usually same as %%{majorver},
 # but in time of bootstrap of next jdk, it is majorver-1, 
 # and this it is better to change it here, on single place
-%global buildjdkver 13
+%global buildjdkver 14
 # Used via new version scheme. JDK 13 was
 # GA'ed in September 2019 => 19.9
 %global vendor_version_string 19.9
@@ -1814,6 +1814,7 @@ require "copy_jdk_configs.lua"
 %changelog
 * Tue Mar 24 2020 Petra Alice Mikova <pmikova@redhat.com> - 1:14.0.0.36-3.rolling
 - Remove s390x workaround flags for GCC 10
+- bump buildjdkver to 14
 
 * Mon Mar 23 2020 Petra Alice Mikova <pmikova@redhat.com> - 1:14.0.0.36-2.rolling
 - removed a whitespace causing fail of postinstall script
