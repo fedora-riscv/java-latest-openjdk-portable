@@ -219,7 +219,7 @@
 %global top_level_dir_name   %{origin}
 %global minorver        0
 %global buildver        36
-%global rpmrelease      3
+%global rpmrelease      4
 # priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 %global priority %( printf '%02d%02d%02d%02d' %{majorver} %{minorver} %{securityver} %{buildver} )
@@ -246,6 +246,23 @@
 %global ea_designator_zip -%{ea_designator}
 %global extraver .%{ea_designator}
 %global eaprefix 0.
+%endif
+
+# Define what url should JVM offer in case of a crash report
+# order may be important, epel may have rhel declared
+%if 0%{?epel}
+%global bugs  https://bugzilla.redhat.com/enter_bug.cgi?product=Fedora%20EPEL&component=%{name}&version=epel%{epel}
+%else
+%if 0%{?fedora}
+# Does not work for rawhide, keeps the version field empty
+%global bugs  https://bugzilla.redhat.com/enter_bug.cgi?product=Fedora&component=%{name}&version=%{fedora}
+%else
+%if 0%{?rhel}
+%global bugs  https://bugzilla.redhat.com/enter_bug.cgi?product=Red%20Hat%20Enterprise%20Linux%20%{rhel}&component=%{name}
+%else
+%global bugs  https://bugzilla.redhat.com/enter_bug.cgi
+%endif
+%endif
 %endif
 
 # parametrized macros are order-sensitive
@@ -1373,6 +1390,10 @@ bash ../configure \
     --with-version-pre="%{ea_designator}"\
     --with-version-opt=%{lts_designator} \
     --with-vendor-version-string="%{vendor_version_string}" \
+    --with-vendor-name="Red Hat, Inc" \
+    --with-vendor-url="https://www.redhat.com/" \
+    --with-vendor-bug-url="%{bugs}" \
+    --with-vendor-vm-bug-url="%{bugs}" \
     --with-boot-jdk=/usr/lib/jvm/java-%{buildjdkver}-openjdk \
     --with-debug-level=$debugbuild \
     --with-native-debug-symbols=internal \
@@ -1812,6 +1833,10 @@ require "copy_jdk_configs.lua"
 
 
 %changelog
+* Wed Apr 08 2020 Jiri Vanek <jvanek@redhat.com> - 1:14.0.0.36-4.rolling
+- set vendor property and vendor urls
+- made urls to be preconfigured by os
+
 * Tue Mar 24 2020 Petra Alice Mikova <pmikova@redhat.com> - 1:14.0.0.36-3.rolling
 - Remove s390x workaround flags for GCC 10
 - bump buildjdkver to 14
