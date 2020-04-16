@@ -1,0 +1,12 @@
+diff --git a/make/launcher/LauncherCommon.gmk b/make/launcher/LauncherCommon.gmk
+--- a/make/launcher/LauncherCommon.gmk
++++ b/make/launcher/LauncherCommon.gmk
+@@ -139,7 +139,7 @@
+       OPTIMIZATION := $$($1_OPTIMIZATION), \
+       CFLAGS := $$(CFLAGS_JDKEXE) \
+           $(LAUNCHER_CFLAGS) \
+-          $(VERSION_CFLAGS) \
++          $(subst $(COMMA),$(DOLLAR)(COMMA),$(VERSION_CFLAGS)) \
+           -DLAUNCHER_NAME='"$(LAUNCHER_NAME)"' \
+           -DPROGNAME='"$1"' \
+           $$($1_CFLAGS), \

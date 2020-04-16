@@ -1062,6 +1062,13 @@ Patch6: rh1684077-openjdk_should_depend_on_pcsc-lite-libs_instead_of_pcsc-lite-d
 # JDK-8237879: make 4.3 breaks build
 Patch7: jdk8237879-make_4_3_build_fixes.patch
 
+#############################################
+#
+# OpenJDK upstreamable patches
+#
+#############################################
+Patch8: jdk8243059-build_fails_when_with_vendor_contains_comma.patch
+
 BuildRequires: autoconf
 BuildRequires: automake
 BuildRequires: alsa-lib-devel
@@ -1288,6 +1295,7 @@ pushd %{top_level_dir_name}
 %patch4 -p1
 %patch6 -p1
 %patch7 -p1
+%patch8 -p1
 popd # openjdk
 
 %patch1000
@@ -1390,7 +1398,7 @@ bash ../configure \
     --with-version-pre="%{ea_designator}"\
     --with-version-opt=%{lts_designator} \
     --with-vendor-version-string="%{vendor_version_string}" \
-    --with-vendor-name="Red Hat, Inc" \
+    --with-vendor-name="Red Hat, Inc." \
     --with-vendor-url="https://www.redhat.com/" \
     --with-vendor-bug-url="%{bugs}" \
     --with-vendor-vm-bug-url="%{bugs}" \
