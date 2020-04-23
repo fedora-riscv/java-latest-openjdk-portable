@@ -199,15 +199,16 @@
 %endif
 
 # New Version-String scheme-style defines
+# If you bump majorver, you must bump also vendor_version_string
 %global majorver 14
+# Used via new version scheme. JDK 14 was
+# GA'ed in March 2020 => 20.3
+%global vendor_version_string 20.3
 %global securityver 1
 # buildjdkver is usually same as %%{majorver},
 # but in time of bootstrap of next jdk, it is majorver-1, 
 # and this it is better to change it here, on single place
 %global buildjdkver 14
-# Used via new version scheme. JDK 14 was
-# GA'ed in March 2020 => 20.3
-%global vendor_version_string 20.3
 # We don't add any LTS designator for STS packages (this package).
 # Neither for Fedora nor EPEL which would have %%{rhel} macro defined.
  %global lts_designator ""
