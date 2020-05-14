@@ -220,7 +220,7 @@
 %global top_level_dir_name   %{origin}
 %global minorver        0
 %global buildver        7
-%global rpmrelease      2
+%global rpmrelease      3
 # priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 %global priority %( printf '%02d%02d%02d%02d' %{majorver} %{minorver} %{securityver} %{buildver} )
@@ -1056,7 +1056,7 @@ Patch6: rh1684077-openjdk_should_depend_on_pcsc-lite-libs_instead_of_pcsc-lite-d
 	
 #############################################	
 #
-# OpenJDK specific patches	
+# OpenJDK patches appearing in 14.0.2	
 #	
 #############################################
 
@@ -1065,10 +1065,12 @@ Patch7: jdk8237879-make_4_3_build_fixes.patch
 
 #############################################
 #
-# OpenJDK upstreamable patches
+# OpenJDK patches in need of upstreaming
 #
 #############################################
+
 Patch8: jdk8243059-build_fails_when_with_vendor_contains_comma.patch
+Patch9: jdk8235833-posixplatform_cpp_should_not_include_sysctl_h.patch
 
 BuildRequires: autoconf
 BuildRequires: automake
@@ -1297,6 +1299,7 @@ pushd %{top_level_dir_name}
 %patch6 -p1
 %patch7 -p1
 %patch8 -p1
+%patch9 -p1
 popd # openjdk
 
 %patch1000
@@ -1842,6 +1845,10 @@ require "copy_jdk_configs.lua"
 
 
 %changelog
+* Thu May 14 2020 Petra Alice Mikova <pmikova@redhat.com> -  1:14.0.1.7-3.rolling
+- introduce patch jdk8235833-posixplatform_cpp_should_not_include_sysctl_h to fix build issues in rawhide
+- rename and reorganize patch sections
+
 * Thu Apr 23 2020 Severin Gehwolf <sgehwolf@redhat.com> - 1:14.0.1.7-2.rolling
 - Fix vendor version to 20.3 (from 19.9)
 
