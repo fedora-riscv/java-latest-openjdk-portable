@@ -26,6 +26,10 @@
 # See: https://bugzilla.redhat.com/show_bug.cgi?id=1520879
 %global _find_debuginfo_opts -g
 
+# With LTO flags enabled, debuginfo checks fail for some reason. Disable
+# LTO for a passing build. This really needs to be looked at.
+%define _lto_cflags %{nil}
+
 # note: parametrized macros are order-sensitive (unlike not-parametrized) even with normal macros
 # also necessary when passing it as parameter to other macros. If not macro, then it is considered a switch
 # see the difference between global and define:
@@ -220,7 +224,7 @@
 %global top_level_dir_name   %{origin}
 %global minorver        0
 %global buildver        12
-%global rpmrelease      1
+%global rpmrelease      2
 # priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 %global priority %( printf '%02d%02d%02d%02d' %{majorver} %{minorver} %{securityver} %{buildver} )
@@ -1833,6 +1837,9 @@ require "copy_jdk_configs.lua"
 
 
 %changelog
+* Mon Jul 27 2020 Severin Gehwolf <sgehwolf@redhat.com> - 1:14.0.2.12-2.rolling
+- Disable LTO so as to pass debuginfo check
+
 * Wed Jul 22 2020 Petra Alice Mikova <pmikova@redhat.com> - 1:14.0.2.12-1.rolling
 - update to jdk 14.0.2.12 CPU version
 - remove upstreamed patch jdk8237879-make_4_3_build_fixes.patch
