@@ -204,11 +204,11 @@
 
 # New Version-String scheme-style defines
 # If you bump majorver, you must bump also vendor_version_string
-%global majorver 14
-# Used via new version scheme. JDK 14 was
-# GA'ed in March 2020 => 20.3
-%global vendor_version_string 20.3
-%global securityver 2
+%global majorver 15
+# Used via new version scheme. JDK 15 was
+# GA'ed in September 2020 => 20.9
+%global vendor_version_string 20.9
+%global securityver 0
 # buildjdkver is usually same as %%{majorver},
 # but in time of bootstrap of next jdk, it is majorver-1, 
 # and this it is better to change it here, on single place
@@ -223,8 +223,8 @@
 %global origin_nice     OpenJDK
 %global top_level_dir_name   %{origin}
 %global minorver        0
-%global buildver        12
-%global rpmrelease      2
+%global buildver        36
+%global rpmrelease      1
 # priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 %global priority %( printf '%02d%02d%02d%02d' %{majorver} %{minorver} %{securityver} %{buildver} )
@@ -240,7 +240,7 @@
 # Release will be (where N is usually a number starting at 1):
 # - 0.N%%{?extraver}%%{?dist} for EA releases,
 # - N%%{?extraver}{?dist} for GA releases
-%global is_ga           1
+%global is_ga           0
 %if %{is_ga}
 %global ea_designator ""
 %global ea_designator_zip ""
@@ -352,14 +352,11 @@ ext=.gz
 alternatives \\
   --install %{_bindir}/java java %{jrebindir -- %{?1}}/java $PRIORITY  --family %{name}.%{_arch} \\
   --slave %{_jvmdir}/jre jre %{_jvmdir}/%{sdkdir -- %{?1}} \\
-  --slave %{_bindir}/jjs jjs %{jrebindir -- %{?1}}/jjs \\
   --slave %{_bindir}/keytool keytool %{jrebindir -- %{?1}}/keytool \\
   --slave %{_bindir}/rmid rmid %{jrebindir -- %{?1}}/rmid \\
   --slave %{_bindir}/rmiregistry rmiregistry %{jrebindir -- %{?1}}/rmiregistry \\
   --slave %{_mandir}/man1/java.1$ext java.1$ext \\
   %{_mandir}/man1/java-%{uniquesuffix -- %{?1}}.1$ext \\
-  --slave %{_mandir}/man1/jjs.1$ext jjs.1$ext \\
-  %{_mandir}/man1/jjs-%{uniquesuffix -- %{?1}}.1$ext \\
   --slave %{_mandir}/man1/keytool.1$ext keytool.1$ext \\
   %{_mandir}/man1/keytool-%{uniquesuffix -- %{?1}}.1$ext \\
   --slave %{_mandir}/man1/rmid.1$ext rmid.1$ext \\
@@ -450,7 +447,6 @@ alternatives \\
   --slave %{_bindir}/jstack jstack %{sdkbindir -- %{?1}}/jstack \\
   --slave %{_bindir}/jstat jstat %{sdkbindir -- %{?1}}/jstat \\
   --slave %{_bindir}/jstatd jstatd %{sdkbindir -- %{?1}}/jstatd \\
-  --slave %{_bindir}/rmic rmic %{sdkbindir -- %{?1}}/rmic \\
   --slave %{_bindir}/serialver serialver %{sdkbindir -- %{?1}}/serialver \\
   --slave %{_mandir}/man1/jar.1$ext jar.1$ext \\
   %{_mandir}/man1/jar-%{uniquesuffix -- %{?1}}.1$ext \\
@@ -486,8 +482,6 @@ alternatives \\
   %{_mandir}/man1/jstat-%{uniquesuffix -- %{?1}}.1$ext \\
   --slave %{_mandir}/man1/jstatd.1$ext jstatd.1$ext \\
   %{_mandir}/man1/jstatd-%{uniquesuffix -- %{?1}}.1$ext \\
-  --slave %{_mandir}/man1/rmic.1$ext rmic.1$ext \\
-  %{_mandir}/man1/rmic-%{uniquesuffix -- %{?1}}.1$ext \\
   --slave %{_mandir}/man1/serialver.1$ext serialver.1$ext \\
   %{_mandir}/man1/serialver-%{uniquesuffix -- %{?1}}.1$ext 
 
@@ -576,7 +570,6 @@ exit 0
 %{_jvmdir}/%{jrelnk -- %{?1}}
 %dir %{_jvmdir}/%{sdkdir -- %{?1}}/bin
 %{_jvmdir}/%{sdkdir -- %{?1}}/bin/java
-%{_jvmdir}/%{sdkdir -- %{?1}}/bin/jjs
 %{_jvmdir}/%{sdkdir -- %{?1}}/bin/keytool
 %{_jvmdir}/%{sdkdir -- %{?1}}/bin/rmid
 %{_jvmdir}/%{sdkdir -- %{?1}}/bin/rmiregistry
@@ -633,7 +626,6 @@ exit 0
 %{_jvmdir}/%{sdkdir -- %{?1}}/lib/jfr/default.jfc
 %{_jvmdir}/%{sdkdir -- %{?1}}/lib/jfr/profile.jfc
 %{_mandir}/man1/java-%{uniquesuffix -- %{?1}}.1*
-%{_mandir}/man1/jjs-%{uniquesuffix -- %{?1}}.1*
 %{_mandir}/man1/keytool-%{uniquesuffix -- %{?1}}.1*
 %{_mandir}/man1/rmid-%{uniquesuffix -- %{?1}}.1*
 %{_mandir}/man1/rmiregistry-%{uniquesuffix -- %{?1}}.1*
@@ -683,8 +675,6 @@ exit 0
 %if %{is_release_build -- %{?1}}
 %ghost %{_bindir}/java
 %ghost %{_jvmdir}/jre
-# https://bugzilla.redhat.com/show_bug.cgi?id=1312019
-%ghost %{_bindir}/jjs
 %ghost %{_bindir}/keytool
 %ghost %{_bindir}/pack200
 %ghost %{_bindir}/rmid
@@ -729,7 +719,6 @@ exit 0
 %{_jvmdir}/%{sdkdir -- %{?1}}/bin/jstack
 %{_jvmdir}/%{sdkdir -- %{?1}}/bin/jstat
 %{_jvmdir}/%{sdkdir -- %{?1}}/bin/jstatd
-%{_jvmdir}/%{sdkdir -- %{?1}}/bin/rmic
 %{_jvmdir}/%{sdkdir -- %{?1}}/bin/serialver
 %ifarch %{aot_arches}
 %{_jvmdir}/%{sdkdir -- %{?1}}/bin/jaotc
@@ -757,7 +746,6 @@ exit 0
 %{_mandir}/man1/jstack-%{uniquesuffix -- %{?1}}.1*
 %{_mandir}/man1/jstat-%{uniquesuffix -- %{?1}}.1*
 %{_mandir}/man1/jstatd-%{uniquesuffix -- %{?1}}.1*
-%{_mandir}/man1/rmic-%{uniquesuffix -- %{?1}}.1*
 %{_mandir}/man1/serialver-%{uniquesuffix -- %{?1}}.1*
 %{_mandir}/man1/jdeprscan-%{uniquesuffix -- %{?1}}.1.gz
 %{_mandir}/man1/jlink-%{uniquesuffix -- %{?1}}.1.gz
@@ -800,7 +788,6 @@ exit 0
 %ghost %{_bindir}/jstack
 %ghost %{_bindir}/jstat
 %ghost %{_bindir}/jstatd
-%ghost %{_bindir}/rmic
 %ghost %{_bindir}/serialver
 %ghost %{_jvmdir}/java-%{origin}
 %ghost %{_jvmdir}/java-%{javaver}
@@ -1021,7 +1008,7 @@ URL:      http://openjdk.java.net/
 
 # to regenerate source0 (jdk) and source8 (jdk's taspets) run update_package.sh
 # update_package.sh contains hard-coded repos, revisions, tags, and projects to regenerate the source archives
-Source0: jdk-updates-jdk%{majorver}u-jdk-%{majorver}.%{minorver}.%{securityver}+%{buildver}.tar.xz
+Source0: jdk-jdk%{majorver}-jdk-%{majorver}+%{buildver}.tar.xz
 Source8: systemtap_3.2_tapsets_hg-icedtea8-9d464368e06d.tar.xz
 
 # Desktop files. Adapted from IcedTea
@@ -1624,7 +1611,7 @@ if ! echo $suffix | grep -q "debug" ; then
   # Install Javadoc documentation
   install -d -m 755 $RPM_BUILD_ROOT%{_javadocdir}
   cp -a %{buildoutputdir -- $suffix}/images/docs $RPM_BUILD_ROOT%{_javadocdir}/%{uniquejavadocdir -- $suffix}
-  cp -a %{buildoutputdir -- $suffix}/bundles/jdk-%{majorver}.%{minorver}.%{securityver}%{ea_designator_zip}+%{buildver}%{lts_designator_zip}-docs.zip $RPM_BUILD_ROOT%{_javadocdir}/%{uniquejavadocdir -- $suffix}.zip
+  cp -a %{buildoutputdir -- $suffix}/bundles/jdk-%{majorver}%{ea_designator_zip}+%{buildver}%{lts_designator_zip}-docs.zip $RPM_BUILD_ROOT%{_javadocdir}/%{uniquejavadocdir -- $suffix}.zip
 fi
 
 # Install icons and menu entries
@@ -1837,6 +1824,13 @@ require "copy_jdk_configs.lua"
 
 
 %changelog
+* Mon Aug 31 2020 Petra Alice Mikova <pmikova@redhat.com> - 1:15.0.0.36-0.1.ea.rolling
+- Update to jdk 15.0.0.36 tag
+- Modify rh1648249-add_commented_out_nss_cfg_provider_to_java_security.patch
+- Update vendor version string to 20.9
+- jjs removed from packaging after JEP 372: Nashorn removal
+- rmic removed from packaging after JDK-8225319
+
 * Mon Jul 27 2020 Severin Gehwolf <sgehwolf@redhat.com> - 1:14.0.2.12-2.rolling
 - Disable LTO so as to pass debuginfo check
 
