@@ -26,9 +26,9 @@
 # level folder, name is created, based on parameter
 #
 
-if [ ! "x$PR3788" = "x" ] ; then
-  if [ ! -f "$PR3788" ] ; then
-    echo "You have specified PR3788 as $PR3788 but it does not exist. Exiting"
+if [ ! "x$PR3803" = "x" ] ; then
+  if [ ! -f "$PR3803" ] ; then
+    echo "You have specified PR3803 as $PR3803 but it does not exist. Exiting"
     exit 1
   fi
 fi
@@ -125,18 +125,18 @@ pushd "${FILE_NAME_ROOT}"
 	    rm -vf ${CRYPTO_PATH}/ecp_224.c
 
             echo "Syncing EC list with NSS"
-            if [ "x$PR3788" = "x" ] ; then
+            if [ "x$PR3803" = "x" ] ; then
                 # originally for 8:
-                # get PR3788.patch (from http://icedtea.classpath.org/hg/icedtea14) from most correct tag
-                # Do not push it or publish it (see https://icedtea.classpath.org/bugzilla/show_bug.cgi?id=3788)
-		echo "PR3788 not found. Downloading..."
-		wget http://icedtea.classpath.org/hg/icedtea14/raw-file/fabce78297b7/patches/pr3788.patch
-	        echo "Applying ${PWD}/pr3788.patch"
-		patch -Np1 < pr3788.patch
-		rm pr3788.patch
+                # get PR3803.patch (from http://icedtea.classpath.org/hg/icedtea15) from most correct tag
+                # Do not push it or publish it (see https://icedtea.classpath.org/bugzilla/show_bug.cgi?id=3803)
+		echo "PR3803 not found. Downloading..."
+		wget https://icedtea.classpath.org/hg/icedtea15/raw-file/d68ffcc9a497/patches/pr3803.patch
+	        echo "Applying ${PWD}/pr3803.patch"
+		patch -Np1 < pr3803.patch
+		rm pr3803.patch
 	    else
-		echo "Applying ${PR3788}"
-		patch -Np1 < $PR3788
+		echo "Applying ${PR3803}"
+		patch -Np1 < $PR3803
             fi;
             find . -name '*.orig' -exec rm -vf '{}' ';'
         popd

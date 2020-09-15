@@ -33,9 +33,8 @@ fi
 
 # OpenJDK from Shenandoah project
 export PROJECT_NAME="jdk"
-export REPO_NAME="jdk12"
-# warning, clonning without shenadnaoh suffix, you will clone pure jdk - thus without shenandaoh GC
-export VERSION="jdk-12+25"
+export REPO_NAME="jdk15"
+export VERSION="jdk-15+36"
 export COMPRESSION=xz
 # unset tapsets overrides
 export OPENJDK_URL=""
