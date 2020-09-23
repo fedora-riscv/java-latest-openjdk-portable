@@ -4,18 +4,17 @@
 #
 # Examples:
 #
-# Produce release *and* slowdebug builds on x86_64 (default):
-# $ rpmbuild -ba java-1.8.0-openjdk.spec
+# Produce release, fastdebug *and* slowdebug builds on x86_64 (default):
+# $ rpmbuild -ba java-latest-openjdk.spec
 #
-# Produce only release builds (no slowdebug builds) on x86_64:
-# $ rpmbuild -ba java-1.8.0-openjdk.spec --without slowdebug
+# Produce only release builds (no debug builds) on x86_64:
+# $ rpmbuild -ba java-latest-openjdk.spec --without slowdebug --without fastdebug
 #
 # Only produce a release build on x86_64:
-# $ fedpkg mockbuild --without slowdebug
+# $ rhpkg mockbuild --without slowdebug --without fastdebug
 #
-# Only produce a debug build on x86_64:
-# $ fedpkg local --without release
-#
+# Enable fastdebug builds by default on relevant arches.
+%bcond_without fastdebug
 # Enable slowdebug builds by default on relevant arches.
 %bcond_without slowdebug
 # Enable release builds by default on relevant arches.
@@ -36,13 +35,16 @@
 # See https://github.com/rpm-software-management/rpm/issues/127 to comments at  "pmatilai commented on Aug 18, 2017"
 # (initiated in https://bugzilla.redhat.com/show_bug.cgi?id=1482192)
 %global debug_suffix_unquoted -slowdebug
+%global fastdebug_suffix_unquoted -fastdebug
 # quoted one for shell operations
 %global debug_suffix "%{debug_suffix_unquoted}"
+%global fastdebug_suffix "%{fastdebug_suffix_unquoted}"
 %global normal_suffix ""
 
-# if you want only debug build but providing java build only normal build but set normalbuild_parameter
-%global debug_warning This package has full debug on. Install only in need and remove asap.
+%global debug_warning This package is unoptimised with full debugging. Install only as needed and remove ASAP.
 %global debug_on with full debug on
+%global fastdebug_warning This package is optimised with full debugging. Install only as needed and remove ASAP.
+%global for_fastdebug_on with minimal debug on
 %global for_debug for packages with debug on
 
 %if %{with release}
@@ -52,9 +54,9 @@
 %endif
 
 %if %{include_normal_build}
-%global build_loop1 %{normal_suffix}
+%global normal_build %{normal_suffix}
 %else
-%global build_loop1 %{nil}
+%global normal_build %{nil}
 %endif
 
 # We have hardcoded list of files, which  is appearing in alternatives, and in files
@@ -83,6 +85,7 @@
 %global multilib_arches %{power64} sparc64 x86_64
 %global jit_arches      %{ix86} x86_64 sparcv9 sparc64 %{aarch64} %{power64} %{arm} s390x
 %global aot_arches      x86_64 %{aarch64}
+%global fastdebug_arches x86_64 ppc64le aarch64 s390x
 
 # By default, we build a debug build during main build on JIT architectures
 %if %{with slowdebug}
@@ -106,17 +109,32 @@
 %global use_shenandoah_hotspot 0
 %endif
 
-%if %{include_debug_build}
-%global build_loop2 %{debug_suffix}
+# By default, we build a fastdebug build during main build only on fastdebug architectures
+%if %{with fastdebug}
+%ifarch %{fastdebug_arches}
+%global include_fastdebug_build 1
 %else
-%global build_loop2 %{nil}
+%global include_fastdebug_build 0
+%endif
 %endif
 
-# if you disable both builds, then the build fails
-%global build_loop  %{build_loop1} %{build_loop2}
-# note: that order: normal_suffix debug_suffix, in case of both enabled
-# is expected in one single case at the end of the build
-%global rev_build_loop  %{build_loop2} %{build_loop1}
+%if %{include_debug_build}
+%global slowdebug_build %{debug_suffix}
+%else
+%global slowdebug_build %{nil}
+%endif
+
+%if %{include_fastdebug_build}
+%global fastdebug_build %{fastdebug_suffix}
+%else
+%global fastdebug_build %{nil}
+%endif
+
+# If you disable both builds, then the build fails
+# Note that the debug build requires the normal build for docs
+%global build_loop %{normal_build} %{fastdebug_build} %{slowdebug_build}
+# Test slowdebug first as it provides the best diagnostics
+%global rev_build_loop  %{slowdebug_build} %{fastdebug_build} %{normal_build}
 
 %ifarch %{jit_arches}
 %global bootstrap_build 1
@@ -224,7 +242,7 @@
 %global top_level_dir_name   %{origin}
 %global minorver        0
 %global buildver        36
-%global rpmrelease      1
+%global rpmrelease      2
 # priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 %global priority %( printf '%02d%02d%02d%02d' %{majorver} %{minorver} %{securityver} %{buildver} )
@@ -1114,6 +1132,17 @@ The %{origin_nice} runtime environment.
 %{debug_warning}
 %endif
 
+%if %{include_fastdebug_build}
+%package fastdebug
+Summary: %{origin_nice} Runtime Environment %{majorver} %{fastdebug_on}
+Group:   Development/Languages
+
+%{java_rpo -- %{fastdebug_suffix_unquoted}}
+%description fastdebug
+The %{origin_nice} runtime environment.
+%{fastdebug_warning}
+%endif
+
 %if %{include_normal_build}
 %package headless
 Summary: %{origin_nice} Headless Runtime Environment %{majorver}
@@ -1133,6 +1162,18 @@ Summary: %{origin_nice} Runtime Environment %{debug_on}
 %description headless-slowdebug
 The %{origin_nice} runtime environment %{majorver} without audio and video support.
 %{debug_warning}
+%endif
+
+%if %{include_fastdebug_build}
+%package headless-fastdebug
+Summary: %{origin_nice} Runtime Environment %{fastdebug_on}
+Group:   Development/Languages
+
+%{java_headless_rpo -- %{fastdebug_suffix_unquoted}}
+
+%description headless-fastdebug
+The %{origin_nice} runtime environment %{majorver} without audio and video support.
+%{fastdebug_warning}
 %endif
 
 %if %{include_normal_build}
@@ -1156,6 +1197,18 @@ The %{origin_nice} development tools %{majorver}.
 %{debug_warning}
 %endif
 
+%if %{include_fastdebug_build}
+%package devel-fastdebug
+Summary: %{origin_nice} Development Environment %{majorver} %{fastdebug_on}
+Group:   Development/Tools
+
+%{java_devel_rpo -- %{fastdebug_suffix_unquoted}}
+
+%description devel-fastdebug
+The %{origin_nice} development tools %{majorver}.
+%{fastdebug_warning}
+%endif
+
 %if %{include_normal_build}
 %package jmods
 Summary: JMods for %{origin_nice} %{majorver}
@@ -1177,6 +1230,19 @@ The JMods for %{origin_nice} %{majorver}.
 %{debug_warning}
 %endif
 
+%if %{include_fastdebug_build}
+%package jmods-fastdebug
+Summary: JMods for %{origin_nice} %{majorver} %{fastdebug_on}
+Group:   Development/Tools
+
+%{java_jmods_rpo -- %{fastdebug_suffix_unquoted}}
+
+%description jmods-fastdebug
+The JMods for %{origin_nice} %{majorver}.
+%{fastdebug_warning}
+%endif
+
+
 %if %{include_normal_build}
 %package demo
 Summary: %{origin_nice} Demos %{majorver}
@@ -1196,6 +1262,18 @@ Summary: %{origin_nice} Demos %{majorver} %{debug_on}
 %description demo-slowdebug
 The %{origin_nice} demos %{majorver}.
 %{debug_warning}
+%endif
+
+%if %{include_fastdebug_build}
+%package demo-fastdebug
+Summary: %{origin_nice} Demos %{majorver} %{fastdebug_on}
+Group:   Development/Languages
+
+%{java_demo_rpo -- %{fastdebug_suffix_unquoted}}
+
+%description demo-fastdebug
+The %{origin_nice} demos %{majorver}.
+%{fastdebug_warning}
 %endif
 
 %if %{include_normal_build}
@@ -1220,6 +1298,19 @@ The java-%{origin}-src-slowdebug sub-package contains the complete %{origin_nice
  class library source code for use by IDE indexers and debuggers. Debugging %{for_debug}.
 %endif
 
+%if %{include_fastdebug_build}
+%package src-fastdebug
+Summary: %{origin_nice} Source Bundle %{majorver} %{for_fastdebug}
+Group:   Development/Languages
+
+%{java_src_rpo -- %{fastdebug_suffix_unquoted}}
+
+%description src-fastdebug
+The java-%{origin}-src-fastdebug sub-package contains the complete %{origin_nice} %{majorver}
+ class library source code for use by IDE indexers and debuggers. Debugging %{for_fastdebug}.
+%endif
+
+
 %if %{include_normal_build}
 %package javadoc
 Summary: %{origin_nice} %{majorver} API documentation
@@ -1230,9 +1321,7 @@ Obsoletes: javadoc-slowdebug < 1:13.0.0.33-1.rolling
 
 %description javadoc
 The %{origin_nice} %{majorver} API documentation.
-%endif
 
-%if %{include_normal_build}
 %package javadoc-zip
 Summary: %{origin_nice} %{majorver} API documentation compressed in a single archive
 Requires: javapackages-filesystem
@@ -1248,18 +1337,28 @@ The %{origin_nice} %{majorver} API documentation compressed in a single archive.
 if [ %{include_normal_build} -eq 0 -o  %{include_normal_build} -eq 1 ] ; then
   echo "include_normal_build is %{include_normal_build}"
 else
-  echo "include_normal_build is %{include_normal_build}, thats invalid. Use 1 for yes or 0 for no"
+  echo "include_normal_build is %{include_normal_build}, that is invalid. Use 1 for yes or 0 for no"
   exit 11
 fi
 if [ %{include_debug_build} -eq 0 -o  %{include_debug_build} -eq 1 ] ; then
   echo "include_debug_build is %{include_debug_build}"
 else
-  echo "include_debug_build is %{include_debug_build}, thats invalid. Use 1 for yes or 0 for no"
+  echo "include_debug_build is %{include_debug_build}, that is invalid. Use 1 for yes or 0 for no"
   exit 12
 fi
-if [ %{include_debug_build} -eq 0 -a  %{include_normal_build} -eq 0 ] ; then
-  echo "You have disabled both include_debug_build and include_normal_build. That is a no go."
+if [ %{include_fastdebug_build} -eq 0 -o  %{include_fastdebug_build} -eq 1 ] ; then
+  echo "include_fastdebug_build is %{include_fastdebug_build}"
+else
+  echo "include_fastdebug_build is %{include_fastdebug_build}, that is invalid. Use 1 for yes or 0 for no"
   exit 13
+fi
+if [ %{include_debug_build} -eq 0 -a  %{include_normal_build} -eq 0 -a  %{include_fastdebug_build} -eq 0 ] ; then
+  echo "You have disabled all builds (normal,fastdebug,slowdebug). That is a no go."
+  exit 14
+fi
+if [ %{include_normal_build} -eq 0 ] ; then
+  echo "You have disabled the normal build, but this is required to provide docs for the debug build."
+  exit 15
 fi
 %setup -q -c -n %{uniquesuffix ""} -T -a 0
 # https://bugzilla.redhat.com/show_bug.cgi?id=1189084
@@ -1288,6 +1387,9 @@ popd # openjdk
 tar --strip-components=1 -x -I xz -f %{SOURCE8}
 %if %{include_debug_build}
 cp -r tapset tapset%{debug_suffix}
+%endif
+%if %{include_fastdebug_build}
+cp -r tapset tapset%{fastdebug_suffix}
 %endif
 
 
@@ -1611,7 +1713,8 @@ if ! echo $suffix | grep -q "debug" ; then
   # Install Javadoc documentation
   install -d -m 755 $RPM_BUILD_ROOT%{_javadocdir}
   cp -a %{buildoutputdir -- $suffix}/images/docs $RPM_BUILD_ROOT%{_javadocdir}/%{uniquejavadocdir -- $suffix}
-  cp -a %{buildoutputdir -- $suffix}/bundles/jdk-%{majorver}%{ea_designator_zip}+%{buildver}%{lts_designator_zip}-docs.zip $RPM_BUILD_ROOT%{_javadocdir}/%{uniquejavadocdir -- $suffix}.zip
+  built_doc_archive=jdk-%{majorver}%{ea_designator_zip}+%{buildver}%{lts_designator_zip}-docs.zip
+  cp -a %{buildoutputdir -- $suffix}/bundles/${built_doc_archive} $RPM_BUILD_ROOT%{_javadocdir}/%{uniquejavadocdir -- $suffix}.zip
 fi
 
 # Install icons and menu entries
@@ -1763,6 +1866,33 @@ require "copy_jdk_configs.lua"
 %{posttrans_devel -- %{debug_suffix_unquoted}}
 %endif
 
+%if %{include_fastdebug_build}
+%post fastdebug
+%{post_script -- %{fastdebug_suffix_unquoted}}
+
+%post headless-fastdebug
+%{post_headless -- %{fastdebug_suffix_unquoted}}
+
+%postun fastdebug
+%{postun_script -- %{fastdebug_suffix_unquoted}}
+
+%postun headless-fastdebug
+%{postun_headless -- %{fastdebug_suffix_unquoted}}
+
+%posttrans fastdebug
+%{posttrans_script -- %{fastdebug_suffix_unquoted}}
+
+%post devel-fastdebug
+%{post_devel -- %{fastdebug_suffix_unquoted}}
+
+%postun devel-fastdebug
+%{postun_devel -- %{fastdebug_suffix_unquoted}}
+
+%posttrans  devel-fastdebug
+%{posttrans_devel -- %{fastdebug_suffix_unquoted}}
+
+%endif
+
 %if %{include_normal_build}
 %files
 # main package builds always
@@ -1794,9 +1924,8 @@ require "copy_jdk_configs.lua"
 %files javadoc
 %{files_javadoc %{nil}}
 
-# this puts huge file to /usr/share
-# unluckily it is really a documentation file
-# and unluckily it really is architecture-dependent, as eg. aot and grail are now x86_64 only
+# This puts a huge documentation file in /usr/share
+# It is now architecture-dependent, as eg. AOT and Graal are now x86_64 only
 # same for debug variant
 %files javadoc-zip
 %{files_javadoc_zip %{nil}}
@@ -1822,8 +1951,31 @@ require "copy_jdk_configs.lua"
 %{files_src -- %{debug_suffix_unquoted}}
 %endif
 
+%if %{include_fastdebug_build}
+%files fastdebug
+%{files_jre -- %{fastdebug_suffix_unquoted}}
+
+%files headless-fastdebug
+%{files_jre_headless -- %{fastdebug_suffix_unquoted}}
+
+%files devel-fastdebug
+%{files_devel -- %{fastdebug_suffix_unquoted}}
+
+%files jmods-fastdebug
+%{files_jmods -- %{fastdebug_suffix_unquoted}}
+
+%files demo-fastdebug
+%{files_demo -- %{fastdebug_suffix_unquoted}}
+
+%files src-fastdebug
+%{files_src -- %{fastdebug_suffix_unquoted}}
+
+%endif
 
 %changelog
+* Mon Sep 21 2020 Petra Alice Mikova <pmikova@redhat.com> - 1:15.0.0.36-2.rolling
+- Add support for fastdebug builds on 64 bit architectures
+
 * Tue Sep 15 2020 Severin Gehwolf <sgehwolf@redhat.com> - 1:15.0.0.36-1.rolling
 - Remove EA designation
 - Re-generate sources with PR3803 patch
