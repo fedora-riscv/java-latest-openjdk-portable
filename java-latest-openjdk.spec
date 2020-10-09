@@ -20,6 +20,9 @@
 # Enable release builds by default on relevant arches.
 %bcond_without release
 
+# Workaround for stripping of debug symbols from static libraries
+%define __brp_strip_static_archive %{nil}
+
 # The -g flag says to use strip -g instead of full strip on DSOs or EXEs.
 # This fixes detailed NMT and other tools which need minimal debug info.
 # See: https://bugzilla.redhat.com/show_bug.cgi?id=1520879
@@ -143,12 +146,12 @@
 %endif
 
 %if %{bootstrap_build}
-%global release_targets bootcycle-images docs-zip
+%global release_targets bootcycle-images static-libs-image docs-zip
 %else
-%global release_targets images docs-zip
+%global release_targets images docs-zip static-libs-image
 %endif
 # No docs nor bootcycle for debug builds
-%global debug_targets images
+%global debug_targets images static-libs-image
 
 
 # Filter out flags from the optflags macro that cause problems with the OpenJDK build
@@ -242,7 +245,7 @@
 %global top_level_dir_name   %{origin}
 %global minorver        0
 %global buildver        36
-%global rpmrelease      2
+%global rpmrelease      3
 # priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 %global priority %( printf '%02d%02d%02d%02d' %{majorver} %{minorver} %{securityver} %{buildver} )
@@ -291,8 +294,9 @@
 # parametrized macros are order-sensitive
 %global compatiblename  java-%{majorver}-%{origin}
 %global fullversion     %{compatiblename}-%{version}-%{release}
-# images stub
-%global jdkimage       jdk
+# images directories from upstream build
+%global jdkimage                jdk
+%global static_libs_image       static-libs
 # output dir stub
 %define buildoutputdir() %{expand:openjdk/build%{?1}}
 # we can copy the javadoc to not arched dir, or make it not noarch
@@ -829,6 +833,10 @@ exit 0
 %{_jvmdir}/%{sdkdir -- %{?1}}/lib/src.zip
 }
 
+%define files_static_libs() %{expand:
+%{_jvmdir}/%{sdkdir -- %{?1}}/lib/static/linux-%{archinstall}/glibc/lib*.a
+}
+
 %define files_javadoc() %{expand:
 %doc %{_javadocdir}/%{uniquejavadocdir -- %{?1}}
 %license %{buildoutputdir -- %{?1}}/images/%{jdkimage}/legal
@@ -929,6 +937,11 @@ Provides: java-devel%{?1} = %{epoch}:%{version}-%{release}
 Provides: java-%{origin}-devel%{?1} = %{epoch}:%{version}-%{release}
 Provides: java-sdk%{?1} = %{epoch}:%{version}-%{release}
 %endif
+}
+
+%define java_static_libs_rpo() %{expand:
+Requires:         %{name}-devel%{?1}%{?_isa} = %{epoch}:%{version}-%{release}
+OrderWithRequires: %{name}-headless%{?1}%{?_isa} = %{epoch}:%{version}-%{release}
 }
 
 %define java_jmods_rpo() %{expand:
@@ -1206,6 +1219,38 @@ Group:   Development/Tools
 
 %description devel-fastdebug
 The %{origin_nice} development tools %{majorver}.
+%{fastdebug_warning}
+%endif
+
+%if %{include_normal_build}
+%package static-libs
+Summary: %{origin_nice} libraries for static linking %{majorver}
+
+%{java_static_libs_rpo %{nil}}
+
+%description static-libs
+The %{origin_nice} libraries for static linking %{majorver}.
+%endif
+
+%if %{include_debug_build}
+%package static-libs-slowdebug
+Summary: %{origin_nice} libraries for static linking %{majorver} %{debug_on}
+
+%{java_static_libs_rpo -- %{debug_suffix_unquoted}}
+
+%description static-libs-slowdebug
+The %{origin_nice} libraries for static linking %{majorver}.
+%{debug_warning}
+%endif
+
+%if %{include_fastdebug_build}
+%package static-libs-fastdebug
+Summary: %{origin_nice} libraries for static linking %{majorver} %{fastdebug_on}
+
+%{java_static_libs_rpo -- %{fastdebug_suffix_unquoted}}
+
+%description static-libs-fastdebug
+The %{origin_nice} libraries for static linking %{majorver}.
 %{fastdebug_warning}
 %endif
 
@@ -1565,6 +1610,11 @@ $JAVA_HOME/bin/java --add-opens java.base/javax.crypto=ALL-UNNAMED TestCryptoLev
 $JAVA_HOME/bin/javac -d . %{SOURCE14}
 $JAVA_HOME/bin/java $(echo $(basename %{SOURCE14})|sed "s|\.java||")
 
+# Check debug symbols in static libraries (smoke test)
+export STATIC_LIBS_HOME=$(pwd)/%{buildoutputdir -- $suffix}/images/%{static_libs_image}
+readelf --debug-dump $STATIC_LIBS_HOME/lib/libfdlibm.a | grep w_remainder.c
+readelf --debug-dump $STATIC_LIBS_HOME/lib/libfdlibm.a | grep e_remainder.c
+
 # Check debug symbols are present and can identify code
 find "$JAVA_HOME" -iname '*.so' -print0 | while read -d $'\0' lib
 do
@@ -1708,6 +1758,10 @@ pushd %{buildoutputdir $suffix}/images/%{jdkimage}
   rm -rf $RPM_BUILD_ROOT%{_jvmdir}/%{sdkdir -- $suffix}/man
 
 popd
+# Install static libs artefacts
+mkdir -p $RPM_BUILD_ROOT%{_jvmdir}/%{sdkdir -- $suffix}/lib/static/linux-%{archinstall}/glibc
+cp -a %{buildoutputdir -- $suffix}/images/%{static_libs_image}/lib/*.a \
+  $RPM_BUILD_ROOT%{_jvmdir}/%{sdkdir -- $suffix}/lib/static/linux-%{archinstall}/glibc
 
 if ! echo $suffix | grep -q "debug" ; then
   # Install Javadoc documentation
@@ -1912,6 +1966,9 @@ require "copy_jdk_configs.lua"
 %files devel
 %{files_devel %{nil}}
 
+%files static-libs
+%{files_static_libs %{nil}}
+
 %files jmods
 %{files_jmods %{nil}}
 
@@ -1941,6 +1998,9 @@ require "copy_jdk_configs.lua"
 %files devel-slowdebug
 %{files_devel -- %{debug_suffix_unquoted}}
 
+%files static-libs-slowdebug
+%{files_static_libs -- %{debug_suffix_unquoted}}
+
 %files jmods-slowdebug
 %{files_jmods -- %{debug_suffix_unquoted}}
 
@@ -1961,6 +2021,9 @@ require "copy_jdk_configs.lua"
 %files devel-fastdebug
 %{files_devel -- %{fastdebug_suffix_unquoted}}
 
+%files static-libs-fastdebug
+%{files_static_libs -- %{fastdebug_suffix_unquoted}}
+
 %files jmods-fastdebug
 %{files_jmods -- %{fastdebug_suffix_unquoted}}
 
@@ -1973,6 +2036,12 @@ require "copy_jdk_configs.lua"
 %endif
 
 %changelog
+* Fri Oct 09 2020 Jiri Vanek <jvanek@redhat.com> - 1:15.0.0.36-3.rolling
+- Build static-libs-image and add resulting files via -static-libs sub-package.
+- Disable stripping of debug symbols for static libraries part of the -static-libs sub-package.
+- JDK-8245832 increases the set of static libraries, so try and include them all with a wildcard.
+- Update static-libs packaging to new layout
+
 * Mon Sep 21 2020 Petra Alice Mikova <pmikova@redhat.com> - 1:15.0.0.36-2.rolling
 - Add support for fastdebug builds on 64 bit architectures
 
