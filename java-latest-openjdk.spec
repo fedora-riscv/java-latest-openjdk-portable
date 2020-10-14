@@ -245,7 +245,7 @@
 %global top_level_dir_name   %{origin}
 %global minorver        0
 %global buildver        9
-%global rpmrelease      3
+%global rpmrelease      4
 # priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 %global priority %( printf '%02d%02d%02d%02d' %{majorver} %{minorver} %{securityver} %{buildver} )
@@ -851,7 +851,7 @@ exit 0
 
 %define files_javadoc() %{expand:
 %doc %{_javadocdir}/%{uniquejavadocdir -- %{?1}}
-%license %{buildoutputdir -- %{?1}}/images/%{jdkimage}/legal
+%license %{_jvmdir}/%{sdkdir -- %{?1}}/legal
 %if %is_system_jdk
 %if %{is_release_build -- %{?1}}
 %ghost %{_javadocdir}/java
@@ -861,7 +861,7 @@ exit 0
 
 %define files_javadoc_zip() %{expand:
 %doc %{_javadocdir}/%{uniquejavadocdir -- %{?1}}.zip
-%license %{buildoutputdir -- %{?1}}/images/%{jdkimage}/legal
+%license %{_jvmdir}/%{sdkdir -- %{?1}}/legal
 %if %is_system_jdk
 %if %{is_release_build -- %{?1}}
 %ghost %{_javadocdir}/java-zip
@@ -2057,6 +2057,10 @@ require "copy_jdk_configs.lua"
 %endif
 
 %changelog
+* Wed Dec 7 2020 Jiri Vanek <jvanek@redhat.com> - 1:15.0.1.9-4.rolling
+- moved wrongly placed icenses to acompany other ones
+- this bad placement was killng parallel-installability and thus having bad impact to leapp if used
+
 * Tue Dec 01 2020 Jiri Vanek <jvanek@redhat.com> - 1:15.0.1.9-3.rolling
 - added patch600, rh1750419-redhat_alt_java.patch, suprassing removed patch
 - no longer copying of java->alt-java as it is created by  patch600
