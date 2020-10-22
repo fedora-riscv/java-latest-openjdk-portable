@@ -245,7 +245,7 @@
 %global top_level_dir_name   %{origin}
 %global minorver        0
 %global buildver        36
-%global rpmrelease      3
+%global rpmrelease      4
 # priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 %global priority %( printf '%02d%02d%02d%02d' %{majorver} %{minorver} %{securityver} %{buildver} )
@@ -834,6 +834,9 @@ exit 0
 }
 
 %define files_static_libs() %{expand:
+%dir %{_jvmdir}/%{sdkdir -- %{?1}}/lib/static
+%dir %{_jvmdir}/%{sdkdir -- %{?1}}/lib/static/linux-%{archinstall}
+%dir %{_jvmdir}/%{sdkdir -- %{?1}}/lib/static/linux-%{archinstall}/glibc
 %{_jvmdir}/%{sdkdir -- %{?1}}/lib/static/linux-%{archinstall}/glibc/lib*.a
 }
 
@@ -2036,6 +2039,9 @@ require "copy_jdk_configs.lua"
 %endif
 
 %changelog
+* Thu Oct 22 2020 Severin Gehwolf <sgehwolf@redhat.com> - 1:15.0.0.36-4.rolling
+- Fix directory ownership of -static-libs sub-package.
+
 * Fri Oct 09 2020 Jiri Vanek <jvanek@redhat.com> - 1:15.0.0.36-3.rolling
 - Build static-libs-image and add resulting files via -static-libs sub-package.
 - Disable stripping of debug symbols for static libraries part of the -static-libs sub-package.
