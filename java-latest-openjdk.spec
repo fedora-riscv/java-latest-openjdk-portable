@@ -229,7 +229,7 @@
 # Used via new version scheme. JDK 15 was
 # GA'ed in September 2020 => 20.9
 %global vendor_version_string 20.9
-%global securityver 0
+%global securityver 1
 # buildjdkver is usually same as %%{majorver},
 # but in time of bootstrap of next jdk, it is majorver-1, 
 # and this it is better to change it here, on single place
@@ -244,8 +244,8 @@
 %global origin_nice     OpenJDK
 %global top_level_dir_name   %{origin}
 %global minorver        0
-%global buildver        36
-%global rpmrelease      4
+%global buildver        9
+%global rpmrelease      1
 # priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 %global priority %( printf '%02d%02d%02d%02d' %{majorver} %{minorver} %{securityver} %{buildver} )
@@ -1042,7 +1042,7 @@ URL:      http://openjdk.java.net/
 
 # to regenerate source0 (jdk) and source8 (jdk's taspets) run update_package.sh
 # update_package.sh contains hard-coded repos, revisions, tags, and projects to regenerate the source archives
-Source0: jdk-jdk%{majorver}-jdk-%{majorver}+%{buildver}.tar.xz
+Source0: jdk-updates-jdk%{majorver}u-jdk-%{majorver}.%{minorver}.%{securityver}+%{buildver}.tar.xz
 Source8: systemtap_3.2_tapsets_hg-icedtea8-9d464368e06d.tar.xz
 
 # Desktop files. Adapted from IcedTea
@@ -1771,7 +1771,7 @@ if ! echo $suffix | grep -q "debug" ; then
   install -d -m 755 $RPM_BUILD_ROOT%{_javadocdir}
   cp -a %{buildoutputdir -- $suffix}/images/docs $RPM_BUILD_ROOT%{_javadocdir}/%{uniquejavadocdir -- $suffix}
   built_doc_archive=jdk-%{majorver}%{ea_designator_zip}+%{buildver}%{lts_designator_zip}-docs.zip
-  cp -a %{buildoutputdir -- $suffix}/bundles/${built_doc_archive} $RPM_BUILD_ROOT%{_javadocdir}/%{uniquejavadocdir -- $suffix}.zip
+  cp -a %{buildoutputdir -- $suffix}/bundles/jdk-%{majorver}.%{minorver}.%{securityver}%{ea_designator_zip}+%{buildver}%{lts_designator_zip}-docs.zip $RPM_BUILD_ROOT%{_javadocdir}/%{uniquejavadocdir -- $suffix}.zip
 fi
 
 # Install icons and menu entries
@@ -2039,6 +2039,9 @@ require "copy_jdk_configs.lua"
 %endif
 
 %changelog
+* Sun Oct 25 2020 Petra Alice Mikova <pmikova@redhat.com> - 1:15.0.1.9-1.rolling
+- updated to October CPU 2020 sources
+
 * Thu Oct 22 2020 Severin Gehwolf <sgehwolf@redhat.com> - 1:15.0.0.36-4.rolling
 - Fix directory ownership of -static-libs sub-package.
 
