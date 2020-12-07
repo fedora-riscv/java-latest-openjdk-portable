@@ -245,7 +245,7 @@
 %global top_level_dir_name   %{origin}
 %global minorver        0
 %global buildver        9
-%global rpmrelease      2
+%global rpmrelease      3
 # priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 %global priority %( printf '%02d%02d%02d%02d' %{majorver} %{minorver} %{securityver} %{buildver} )
@@ -1078,6 +1078,8 @@ Source14: TestECDSA.java
 # NSS via SunPKCS11 Provider (disabled comment
 # due to memory leak).
 Patch1000: rh1648249-add_commented_out_nss_cfg_provider_to_java_security.patch
+# enable build of spectre/meltdown hardened alt-java
+Patch600: rh1750419-redhat_alt_java.patch
 
 # Ignore AWTError when assistive technologies are loaded
 Patch1:    rh1648242-accessible_toolkit_crash_do_not_break_jvm.patch
@@ -1438,6 +1440,7 @@ pushd %{top_level_dir_name}
 popd # openjdk
 
 %patch1000
+%patch600
 
 # Extract systemtap tapsets
 %if %{with_systemtap}
@@ -1601,7 +1604,6 @@ ln -s %{_datadir}/javazi-1.8/tzdb.dat $JAVA_HOME/lib/tzdb.dat
 
 # Create fake alt-java as a placeholder for future alt-java
 pushd ${JAVA_HOME}
-cp -a bin/java bin/%{alt_java_name}
 # add alt-java man page
 echo "Hardened java binary recommended for launching untrusted code from the Web e.g. javaws" > man/man1/%{alt_java_name}.1
 cat man/man1/java.1 >> man/man1/%{alt_java_name}.1
@@ -2055,6 +2057,10 @@ require "copy_jdk_configs.lua"
 %endif
 
 %changelog
+* Tue Dec 01 2020 Jiri Vanek <jvanek@redhat.com> - 1:15.0.1.9-3.rolling
+- added patch600, rh1750419-redhat_alt_java.patch, suprassing removed patch
+- no longer copying of java->alt-java as it is created by  patch600
+
 * Mon Nov 23 2020 Jiri Vanek <jvanek@redhat.com> - 1:15.0.1.9-2.rolling
 - Create a copy of java as alt-java with alternatives and man pages
 - java-11-openjdk doesn't have a JRE tree, so don't try and copy alt-java there...
