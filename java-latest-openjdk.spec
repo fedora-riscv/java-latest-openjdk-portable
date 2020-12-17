@@ -89,6 +89,8 @@
 %global jit_arches      %{ix86} x86_64 sparcv9 sparc64 %{aarch64} %{power64} %{arm} s390x
 %global aot_arches      x86_64 %{aarch64}
 %global fastdebug_arches x86_64 ppc64le aarch64 s390x
+# Set of architectures for which alt-java has SSB mitigation
+%global ssbd_arches x86_64
 
 # By default, we build a debug build during main build on JIT architectures
 %if %{with slowdebug}
@@ -247,7 +249,7 @@
 %global top_level_dir_name   %{origin}
 %global minorver        0
 %global buildver        9
-%global rpmrelease      4
+%global rpmrelease      5
 # priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 %global priority %( printf '%02d%02d%02d%02d' %{majorver} %{minorver} %{securityver} %{buildver} )
@@ -1634,6 +1636,16 @@ $JAVA_HOME/bin/java --add-opens java.base/javax.crypto=ALL-UNNAMED TestCryptoLev
 $JAVA_HOME/bin/javac -d . %{SOURCE14}
 $JAVA_HOME/bin/java $(echo $(basename %{SOURCE14})|sed "s|\.java||")
 
+# Check java launcher has no SSB mitigation
+if ! nm $JAVA_HOME/bin/java | grep set_speculation ; then true ; else false; fi
+
+# Check alt-java launcher has SSB mitigation on supported architectures
+%ifarch %{ssbd_arches}
+nm $JAVA_HOME/bin/%{alt_java_name} | grep set_speculation
+%else
+if ! nm $JAVA_HOME/bin/%{alt_java_name} | grep set_speculation ; then true ; else false; fi
+%endif
+
 # Check debug symbols in static libraries (smoke test)
 export STATIC_LIBS_HOME=$(pwd)/%{buildoutputdir -- $suffix}/images/%{static_libs_image}
 readelf --debug-dump $STATIC_LIBS_HOME/lib/libfdlibm.a | grep w_remainder.c
@@ -2059,6 +2071,11 @@ require "copy_jdk_configs.lua"
 %endif
 
 %changelog
+* Thu Dec 17 2020 Andrew Hughes <gnu.andrew@redhat.com> - 1:15.0.1.9-5.rolling
+- introduced nm based check to verify alt-java on x86_64 is patched, and no other alt-java or java is patched
+- patch600 rh1750419-redhat_alt_java.patch amended to die, if it is used wrongly
+- introduced ssbd_arches with currently only valid arch of x86_64 to separate real alt-java architectures
+
 * Wed Dec 7 2020 Jiri Vanek <jvanek@redhat.com> - 1:15.0.1.9-4.rolling
 - moved wrongly placed icenses to acompany other ones
 - this bad placement was killng parallel-installability and thus having bad impact to leapp if used
