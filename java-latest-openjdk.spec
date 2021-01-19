@@ -270,7 +270,7 @@
 %global top_level_dir_name   %{origin}
 %global minorver        0
 %global buildver        9
-%global rpmrelease      9
+%global rpmrelease      10
 # priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 %global priority %( printf '%02d%02d%02d%02d' %{majorver} %{minorver} %{securityver} %{buildver} )
@@ -1116,7 +1116,8 @@ Patch3:    rh649512-remove_uses_of_far_in_jpeg_libjpeg_turbo_1_4_compat_for_jdk1
 Patch4:    pr3183-rh1340845-support_fedora_rhel_system_crypto_policy.patch
 # Depend on pcs-lite-libs instead of pcs-lite-devel as this is only in optional repo
 Patch6: rh1684077-openjdk_should_depend_on_pcsc-lite-libs_instead_of_pcsc-lite-devel.patch
-
+# JDK-8259949: Use i686 instead of i586 on x86 when -fcf-protection is passed to the compiler, as CMOV is needed
+Patch8: jdk8259949-allow_cf-protection_on_x86.patch
 
 #############################################
 #
@@ -1466,6 +1467,7 @@ pushd %{top_level_dir_name}
 %patch3 -p1
 %patch4 -p1
 %patch6 -p1
+%patch8 -p1
 popd # openjdk
 
 %patch1000
@@ -2095,6 +2097,9 @@ require "copy_jdk_configs.lua"
 %endif
 
 %changelog
+* Tue Jan 19 2021 Andrew Hughes <gnu.andrew@redhat.com> - 1:15.0.1.9-10.rolling
+- Use -march=i686 for x86 builds if -fcf-protection is detected (needs CMOV)
+
 * Tue Dec 22 2020 Jiri Vanek <jvanek@redhat.com> - 1:15.0.1.9-9.rolling
 - fixed missing condition for fastdebug packages being counted as debug ones
 
@@ -2117,7 +2122,7 @@ require "copy_jdk_configs.lua"
 - patch600 rh1750419-redhat_alt_java.patch amended to die, if it is used wrongly
 - introduced ssbd_arches with currently only valid arch of x86_64 to separate real alt-java architectures
 
-* Wed Dec 7 2020 Jiri Vanek <jvanek@redhat.com> - 1:15.0.1.9-4.rolling
+* Wed Dec 9 2020 Jiri Vanek <jvanek@redhat.com> - 1:15.0.1.9-4.rolling
 - moved wrongly placed licenses to accompany other ones
 - this bad placement was killng parallel-installability and thus having bad impact to leapp if used
 
