@@ -7,9 +7,9 @@
 # If you want to use a local copy of patch PR3788, set the path to it in the PR3788 variable
 #
 # In any case you have to set PROJECT_NAME REPO_NAME and VERSION. eg:
-# PROJECT_NAME=jdk
-# REPO_NAME=jdk
-# VERSION=tip
+# PROJECT_NAME=openjdk
+# REPO_NAME=jdk16
+# VERSION=HEAD
 # or to eg prepare systemtap:
 # icedtea7's jstack and other tapsets
 # VERSION=6327cf1cea9e
@@ -26,16 +26,16 @@
 # level folder, name is created, based on parameter
 #
 
-if [ ! "x$PR3803" = "x" ] ; then
-  if [ ! -f "$PR3803" ] ; then
-    echo "You have specified PR3803 as $PR3803 but it does not exist. Exiting"
+if [ ! "x$PR3823" = "x" ] ; then
+  if [ ! -f "$PR3823" ] ; then
+    echo "You have specified PR3823 as $PR3823 but it does not exist. Exiting"
     exit 1
   fi
 fi
 
 set -e
 
-OPENJDK_URL_DEFAULT=http://hg.openjdk.java.net
+OPENJDK_URL_DEFAULT=https://github.com
 COMPRESSION_DEFAULT=xz
 
 if [ "x$1" = "xhelp" ] ; then
@@ -47,7 +47,7 @@ if [ "x$1" = "xhelp" ] ; then
     echo "COMPRESSION - the compression type to use (optional; defaults to ${COMPRESSION_DEFAULT})"
     echo "FILE_NAME_ROOT - name of the archive, minus extensions (optional; defaults to PROJECT_NAME-REPO_NAME-VERSION)"
     echo "TO_COMPRESS - what part of clone to pack (default is openjdk)"
-    echo "PR3788 - the path to the PR3788 patch to apply (optional; downloaded if unavailable)"
+    echo "PR3823 - the path to the PR3823 patch to apply (optional; downloaded if unavailable)"
     exit 1;
 fi
 
@@ -90,7 +90,7 @@ if [ "x$FILE_NAME_ROOT" = "x" ] ; then
     echo "No file name root specified; default to ${FILE_NAME_ROOT}"
 fi
 if [ "x$REPO_ROOT" = "x" ] ; then
-    REPO_ROOT="${OPENJDK_URL}/${PROJECT_NAME}/${REPO_NAME}"
+    REPO_ROOT="${OPENJDK_URL}/${PROJECT_NAME}/${REPO_NAME}.git"
     echo "No repository root specified; default to ${REPO_ROOT}"
 fi;
 
@@ -107,7 +107,7 @@ else
   mkdir "${FILE_NAME_ROOT}"
   pushd "${FILE_NAME_ROOT}"
     echo "Cloning ${VERSION} root repository from ${REPO_ROOT}"
-    hg clone ${REPO_ROOT} openjdk -r ${VERSION}
+    git clone -b ${VERSION} ${REPO_ROOT} openjdk
   popd
 fi
 pushd "${FILE_NAME_ROOT}"
@@ -125,18 +125,18 @@ pushd "${FILE_NAME_ROOT}"
 	    rm -vf ${CRYPTO_PATH}/ecp_224.c
 
             echo "Syncing EC list with NSS"
-            if [ "x$PR3803" = "x" ] ; then
+            if [ "x$PR3823" = "x" ] ; then
                 # originally for 8:
-                # get PR3803.patch (from http://icedtea.classpath.org/hg/icedtea15) from most correct tag
-                # Do not push it or publish it (see https://icedtea.classpath.org/bugzilla/show_bug.cgi?id=3803)
-		echo "PR3803 not found. Downloading..."
-		wget https://icedtea.classpath.org/hg/icedtea15/raw-file/d68ffcc9a497/patches/pr3803.patch
-	        echo "Applying ${PWD}/pr3803.patch"
-		patch -Np1 < pr3803.patch
-		rm pr3803.patch
+                # get PR3823.patch (from http://icedtea.classpath.org/hg/icedtea16) from most correct tag
+                # Do not push it or publish it (see https://icedtea.classpath.org/bugzilla/show_bug.cgi?id=3823)
+		echo "PR3823 not found. Downloading..."
+		wget https://icedtea.classpath.org/hg/icedtea16/raw-file/tip/patches/pr3823.patch
+	        echo "Applying ${PWD}/pr3823.patch"
+		patch -Np1 < pr3823.patch
+		rm pr3823.patch
 	    else
-		echo "Applying ${PR3803}"
-		patch -Np1 < $PR3803
+		echo "Applying ${PR3823}"
+		patch -Np1 < $PR3823
             fi;
             find . -name '*.orig' -exec rm -vf '{}' ';'
         popd

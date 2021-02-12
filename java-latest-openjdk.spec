@@ -247,18 +247,18 @@
 %endif
 
 # New Version-String scheme-style defines
-%global featurever 15
+%global featurever 16
 %global interimver 0
-%global updatever 2
+%global updatever 0
 %global patchver 0
 # If you bump featurever, you must bump also vendor_version_string
-# Used via new version scheme. JDK 15 was
-# GA'ed in September 2020 => 20.9
-%global vendor_version_string 20.9
+# Used via new version scheme. JDK 16 was
+# GA'ed in March 2020 => 21.3
+%global vendor_version_string 21.3
 # buildjdkver is usually same as %%{featurever},
 # but in time of bootstrap of next jdk, it is featurever-1,
 # and this it is better to change it here, on single place
-%global buildjdkver %{featurever}
+%global buildjdkver 15
 # We don't add any LTS designator for STS packages (this package).
 # Neither for Fedora nor EPEL which would have %%{rhel} macro defined.
  %global lts_designator ""
@@ -271,8 +271,8 @@
 %global origin          openjdk
 %global origin_nice     OpenJDK
 %global top_level_dir_name   %{origin}
-%global buildver        7
-%global rpmrelease      1
+%global buildver        36
+%global rpmrelease      0
 # Priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 # Using 10 digits may overflow the int used for priority, so we combine the patch and build versions
@@ -286,15 +286,10 @@
 %global priority %( printf '%08d' 1 )
 %endif
 %global newjavaver      %{featurever}.%{interimver}.%{updatever}.%{patchver}
-
-# Omit trailing 0 in filenames when the patch version is 0
-%if 0%{?patchver} > 0
-%global filever %{newjavaver}
-%else
-%global filever %{featurever}.%{interimver}.%{updatever}
-%endif
-
 %global javaver         %{featurever}
+
+# Strip up to 6 trailing zeros in newjavaver, as the JDK does, to get the correct version used in filenames
+%global filever %(svn=%{newjavaver}; for i in 1 2 3 4 5 6 ; do svn=${svn%%.0} ; done; echo ${svn})
 
 # Define milestone (EA for pre-releases, GA for releases)
 # Release will be (where N is usually a number starting at 1):
@@ -302,14 +297,16 @@
 # - N%%{?extraver}{?dist} for GA releases
 %global is_ga           1
 %if %{is_ga}
-%global ea_designator ""
+%global build_type GA
+%global expected_ea_designator ""
 %global ea_designator_zip ""
 %global extraver %{nil}
 %global eaprefix %{nil}
 %else
-%global ea_designator ea
-%global ea_designator_zip -%{ea_designator}
-%global extraver .%{ea_designator}
+%global build_type EA
+%global expected_ea_designator ea
+%global ea_designator_zip -%{expected_ea_designator}
+%global extraver .%{expected_ea_designator}
 %global eaprefix 0.
 %endif
 
@@ -347,7 +344,7 @@
 # fix for https://bugzilla.redhat.com/show_bug.cgi?id=1111349
 #         https://bugzilla.redhat.com/show_bug.cgi?id=1590796#c14
 #         https://bugzilla.redhat.com/show_bug.cgi?id=1655938
-%global _privatelibs libsplashscreen[.]so.*|libawt_xawt[.]so.*|libjli[.]so.*|libattach[.]so.*|libawt[.]so.*|libextnet[.]so.*|libawt_headless[.]so.*|libdt_socket[.]so.*|libfontmanager[.]so.*|libinstrument[.]so.*|libj2gss[.]so.*|libj2pcsc[.]so.*|libj2pkcs11[.]so.*|libjaas[.]so.*|libjavajpeg[.]so.*|libjdwp[.]so.*|libjimage[.]so.*|libjsound[.]so.*|liblcms[.]so.*|libmanagement[.]so.*|libmanagement_agent[.]so.*|libmanagement_ext[.]so.*|libmlib_image[.]so.*|libnet[.]so.*|libnio[.]so.*|libprefs[.]so.*|librmi[.]so.*|libsaproc[.]so.*|libsctp[.]so.*|libsunec[.]so.*|libzip[.]so.*
+%global _privatelibs libsplashscreen[.]so.*|libawt_xawt[.]so.*|libjli[.]so.*|libattach[.]so.*|libawt[.]so.*|libextnet[.]so.*|libawt_headless[.]so.*|libdt_socket[.]so.*|libfontmanager[.]so.*|libinstrument[.]so.*|libj2gss[.]so.*|libj2pcsc[.]so.*|libj2pkcs11[.]so.*|libjaas[.]so.*|libjavajpeg[.]so.*|libjdwp[.]so.*|libjimage[.]so.*|libjsound[.]so.*|liblcms[.]so.*|libmanagement[.]so.*|libmanagement_agent[.]so.*|libmanagement_ext[.]so.*|libmlib_image[.]so.*|libnet[.]so.*|libnio[.]so.*|libprefs[.]so.*|librmi[.]so.*|libsaproc[.]so.*|libsctp[.]so.*|libzip[.]so.*
 %global _publiclibs libjawt[.]so.*|libjava[.]so.*|libjvm[.]so.*|libverify[.]so.*|libjsig[.]so.*
 %if %is_system_jdk
 %global __provides_exclude ^(%{_privatelibs})$
@@ -692,7 +689,6 @@ exit 0
 %{_jvmdir}/%{sdkdir -- %{?1}}/lib/libsaproc.so
 %endif
 %{_jvmdir}/%{sdkdir -- %{?1}}/lib/libsctp.so
-%{_jvmdir}/%{sdkdir -- %{?1}}/lib/libsunec.so
 %{_jvmdir}/%{sdkdir -- %{?1}}/lib/libverify.so
 %{_jvmdir}/%{sdkdir -- %{?1}}/lib/libzip.so
 %dir %{_jvmdir}/%{sdkdir -- %{?1}}/lib/jfr
@@ -1093,7 +1089,8 @@ URL:      http://openjdk.java.net/
 
 # to regenerate source0 (jdk) run update_package.sh
 # update_package.sh contains hard-coded repos, revisions, tags, and projects to regenerate the source archives
-Source0: jdk-updates-jdk%{featurever}u-jdk-%{filever}+%{buildver}%{?tagsuffix:-%{tagsuffix}}.tar.xz
+#Source0: openjdk-jdk%{featurever}u-jdk-%{filever}+%{buildver}%{?tagsuffix:-%{tagsuffix}}.tar.xz
+Source0: openjdk-jdk%{featurever}-jdk-%{filever}+%{buildver}.tar.xz
 
 # Use 'icedtea_sync.sh' to update the following
 # They are based on code contained in the IcedTea project (3.x).
@@ -1165,6 +1162,7 @@ BuildRequires: freetype-devel
 BuildRequires: giflib-devel
 BuildRequires: gcc-c++
 BuildRequires: gdb
+BuildRequires: harfbuzz-devel
 BuildRequires: lcms2-devel
 BuildRequires: libjpeg-devel
 BuildRequires: libpng-devel
@@ -1566,8 +1564,8 @@ export CFLAGS="$CFLAGS -mieee"
 # We use ourcppflags because the OpenJDK build seems to
 # pass EXTRA_CFLAGS to the HotSpot C++ compiler...
 # Explicitly set the C++ standard as the default has changed on GCC >= 6
-EXTRA_CFLAGS="%ourcppflags -std=gnu++98 -Wno-error -fno-delete-null-pointer-checks -fno-lifetime-dse -fcommon"
-EXTRA_CPP_FLAGS="%ourcppflags -std=gnu++98 -fno-delete-null-pointer-checks -fno-lifetime-dse -fcommon"
+EXTRA_CFLAGS="%ourcppflags"
+EXTRA_CPP_FLAGS="%ourcppflags"
 
 %ifarch %{power64} ppc
 # fix rpmlint warnings
@@ -1586,6 +1584,24 @@ fi
 # Variable used in hs_err hook on build failures
 top_dir_abs_path=$(pwd)/%{top_level_dir_name}
 
+# The OpenJDK version file includes the current
+# upstream version information. For some reason,
+# configure does not automatically use the
+# default pre-version supplied there (despite
+# what the file claims), so we pass it manually
+# to configure
+VERSION_FILE=${top_dir_abs_path}/make/autoconf/version-numbers
+if [ -f ${VERSION_FILE} ] ; then
+    EA_DESIGNATOR=$(grep '^DEFAULT_PROMOTED_VERSION_PRE' ${VERSION_FILE} | cut -d '=' -f 2)
+else
+    echo "Could not find OpenJDK version file.";
+    exit 16
+fi
+if [ "x${EA_DESIGNATOR}" != "x%{expected_ea_designator}" ] ; then
+    echo "Spec file is configured for a %{build_type} build, but upstream version-pre setting is ${EA_DESIGNATOR}";
+    exit 17
+fi
+
 mkdir -p %{buildoutputdir -- $suffix}
 pushd %{buildoutputdir -- $suffix}
 
@@ -1597,7 +1613,7 @@ bash ../configure \
     --with-jobs=1 \
 %endif
     --with-version-build=%{buildver} \
-    --with-version-pre="%{ea_designator}" \
+    --with-version-pre="${EA_DESIGNATOR}" \
     --with-version-opt=%{lts_designator} \
     --with-vendor-version-string="%{vendor_version_string}" \
     --with-vendor-name="Red Hat, Inc." \
@@ -1613,11 +1629,13 @@ bash ../configure \
     --with-giflib=system \
     --with-libpng=system \
     --with-lcms=system \
+    --with-harfbuzz=system \
     --with-stdc++lib=dynamic \
     --with-extra-cxxflags="$EXTRA_CPP_FLAGS" \
     --with-extra-cflags="$EXTRA_CFLAGS" \
     --with-extra-ldflags="%{ourldflags}" \
     --with-num-cores="$NUM_PROC" \
+    --with-source-date="${SOURCE_DATE_EPOCH}" \
     --disable-javac-server \
 %ifarch %{zgc_arches}
     --with-jvm-features=zgc \
@@ -2129,6 +2147,18 @@ require "copy_jdk_configs.lua"
 %endif
 
 %changelog
+* Fri Feb 19 2021 Andrew Hughes <gnu.andrew@redhat.com> - 1:16.0.0.0.36-0.0.ea.rolling
+- Update to jdk-16.0.0.0+36
+- Update tarball generation script to use git following OpenJDK's move to github
+- Update tarball generation script to use PR3823 which handles JDK-8235710 changes
+- Use upstream default for version-pre rather than setting it to "ea" or ""
+- Drop libsunec.so which is no longer generated, thanks to JDK-8235710
+- Drop unnecessary compiler flags, dating back to work on GCC 6 & 10
+- Adapt RH1750419 alt-java patch to still apply after some variable re-naming in the makefiles
+- Update filever to remove any trailing zeros, as in the OpenJDK build, and use for source filename
+- Use system harfbuzz now this is supported.
+- Pass SOURCE_DATE_EPOCH to build for reproducible builds
+
 * Fri Feb 19 2021 Stephan Bergmann <sbergman@redhat.com> - 1:15.0.2.0.7-1.rolling
 - Hardcode /usr/sbin/alternatives for Flatpak builds
 
