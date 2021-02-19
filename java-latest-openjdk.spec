@@ -272,7 +272,7 @@
 %global origin_nice     OpenJDK
 %global top_level_dir_name   %{origin}
 %global buildver        7
-%global rpmrelease      0
+%global rpmrelease      1
 # Priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 # Using 10 digits may overflow the int used for priority, so we combine the patch and build versions
@@ -376,6 +376,14 @@
 %global alt_java_name     alt-java
 
 %global rpm_state_dir %{_localstatedir}/lib/rpm-state/
+
+# For flatpack builds hard-code /usr/sbin/alternatives,
+# otherwise use %%{_sbindir} relative path.
+%if 0%{?flatpak}
+%global alternatives_requires /usr/sbin/alternatives
+%else
+%global alternatives_requires %{_sbindir}/alternatives
+%endif
 
 %if %{with_systemtap}
 # Where to install systemtap tapset (links)
@@ -945,9 +953,9 @@ OrderWithRequires: copy-jdk-configs
 # for printing support
 Requires: cups-libs
 # Post requires alternatives to install tool alternatives
-Requires(post):   %{_sbindir}/alternatives
+Requires(post):   %{alternatives_requires}
 # Postun requires alternatives to uninstall tool alternatives
-Requires(postun): %{_sbindir}/alternatives
+Requires(postun): %{alternatives_requires}
 # for optional support of kernel stream control, card reader and printing bindings
 Suggests: lksctp-tools%{?_isa}, pcsc-lite-devel%{?_isa}
 
@@ -969,9 +977,9 @@ Provides: java-headless%{?1} = %{epoch}:%{version}-%{release}
 Requires:         %{name}%{?1}%{?_isa} = %{epoch}:%{version}-%{release}
 OrderWithRequires: %{name}-headless%{?1}%{?_isa} = %{epoch}:%{version}-%{release}
 # Post requires alternatives to install tool alternatives
-Requires(post):   %{_sbindir}/alternatives
+Requires(post):   %{alternatives_requires}
 # Postun requires alternatives to uninstall tool alternatives
-Requires(postun): %{_sbindir}/alternatives
+Requires(postun): %{alternatives_requires}
 
 # Standard JPackage devel provides
 Provides: java-sdk-%{javaver}-%{origin}%{?1} = %{epoch}:%{version}-%{release}
@@ -1019,9 +1027,9 @@ Provides: java-%{origin}-demo%{?1} = %{epoch}:%{version}-%{release}
 %define java_javadoc_rpo() %{expand:
 OrderWithRequires: %{name}-headless%{?1}%{?_isa} = %{epoch}:%{version}-%{release}
 # Post requires alternatives to install javadoc alternative
-Requires(post):   %{_sbindir}/alternatives
+Requires(post):   %{alternatives_requires}
 # Postun requires alternatives to uninstall javadoc alternative
-Requires(postun): %{_sbindir}/alternatives
+Requires(postun): %{alternatives_requires}
 
 # Standard JPackage javadoc provides
 Provides: java-%{javaver}-javadoc%{?1} = %{epoch}:%{version}-%{release}
@@ -1051,7 +1059,7 @@ Version: %{newjavaver}.%{buildver}
 # This package needs `.rolling` as part of Release so as to not conflict on install with
 # java-X-openjdk. I.e. when latest rolling release is also an LTS release packaged as
 # java-X-openjdk. See: https://bugzilla.redhat.com/show_bug.cgi?id=1647298
-Release: %{?eaprefix}%{rpmrelease}%{?extraver}.rolling%{?dist}.1
+Release: %{?eaprefix}%{rpmrelease}%{?extraver}.rolling%{?dist}
 # java-1.5.0-ibm from jpackage.org set Epoch to 1 for unknown reasons
 # and this change was brought into RHEL-4. java-1.5.0-ibm packages
 # also included the epoch in their virtual provides. This created a
@@ -2121,6 +2129,9 @@ require "copy_jdk_configs.lua"
 %endif
 
 %changelog
+* Fri Feb 19 2021 Stephan Bergmann <sbergman@redhat.com> - 1:15.0.2.0.7-1.rolling
+- Hardcode /usr/sbin/alternatives for Flatpak builds
+
 * Tue Jan 26 2021 Fedora Release Engineering <releng@fedoraproject.org> - 1:15.0.2.0.7-0.rolling.1
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_34_Mass_Rebuild
 
