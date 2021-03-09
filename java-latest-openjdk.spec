@@ -258,7 +258,7 @@
 # buildjdkver is usually same as %%{featurever},
 # but in time of bootstrap of next jdk, it is featurever-1,
 # and this it is better to change it here, on single place
-%global buildjdkver 15
+%global buildjdkver 16
 # We don't add any LTS designator for STS packages (this package).
 # Neither for Fedora nor EPEL which would have %%{rhel} macro defined.
  %global lts_designator ""
@@ -2149,6 +2149,7 @@ require "copy_jdk_configs.lua"
 %changelog
 * Tue Mar 09 2021 Jiri Vanek <jvanek@redhat.com> - 1:16.0.0.0.36-1.rolling
 - fixed suggests of wrong pcsc-lite-devel%{?_isa} to correct pcsc-lite-libs%{?_isa}
+- bumped buildjdkver to build by itself - 16
 
 * Fri Feb 19 2021 Andrew Hughes <gnu.andrew@redhat.com> - 1:16.0.0.0.36-0.rolling
 - Update to jdk-16.0.0.0+36
