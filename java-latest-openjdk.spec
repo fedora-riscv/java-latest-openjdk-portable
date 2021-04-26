@@ -2221,6 +2221,10 @@ require "copy_jdk_configs.lua"
 %endif
 
 %changelog
+* Sun Apr 25 2021 Petra Alice Mikova <pmikova@redhat.com> - 1:16.0.1.0.9-1.rolling
+- update to 16.0.1+9 april cpu tag
+- dropped jdk8259949-allow_cf-protection_on_x86.patch 
+
 * Thu Mar 11 2021 Andrew Hughes <gnu.andrew@redhat.com> - 1:16.0.0.0.36-2.rolling
 - Perform static library build on a separate source tree with bundled image libraries
 - Make static library build optional
