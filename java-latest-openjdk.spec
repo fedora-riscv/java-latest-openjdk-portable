@@ -967,11 +967,13 @@ Requires: tzdata-java >= 2015d
 # for support of kernel stream control
 # libsctp.so.1 is being `dlopen`ed on demand
 Requires: lksctp-tools%{?_isa}
+%if ! 0%{?flatpak}
 # tool to copy jdk's configs - should be Recommends only, but then only dnf/yum enforce it,
 # not rpm transaction and so no configs are persisted when pure rpm -u is run. It may be
 # considered as regression
 Requires: copy-jdk-configs >= 3.9
 OrderWithRequires: copy-jdk-configs
+%endif
 # for printing support
 Requires: cups-libs
 # Post requires alternatives to install tool alternatives
@@ -2230,6 +2232,7 @@ cjc.mainProgram(arg)
 %changelog
 * Fri Apr 29 2021 Jiri Vanek <jvanek@redhat.com> -  1:16.0.1.0.9-2.rolling
 - adapted to newst cjc to fix issue with rpm 4.17
+- Disable copy-jdk-configs for Flatpak builds
 
 * Sun Apr 25 2021 Petra Alice Mikova <pmikova@redhat.com> - 1:16.0.1.0.9-1.rolling
 - update to 16.0.1+9 april cpu tag
