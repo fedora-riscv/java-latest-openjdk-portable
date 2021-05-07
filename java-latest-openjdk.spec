@@ -298,7 +298,7 @@
 %global top_level_dir_name   %{origin}
 %global top_level_dir_name_backup %{top_level_dir_name}-backup
 %global buildver        9
-%global rpmrelease      2
+%global rpmrelease      3
 # Priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 # Using 10 digits may overflow the int used for priority, so we combine the patch and build versions
@@ -971,7 +971,7 @@ Requires: lksctp-tools%{?_isa}
 # tool to copy jdk's configs - should be Recommends only, but then only dnf/yum enforce it,
 # not rpm transaction and so no configs are persisted when pure rpm -u is run. It may be
 # considered as regression
-Requires: copy-jdk-configs >= 3.9
+Requires: copy-jdk-configs >= 4.0
 OrderWithRequires: copy-jdk-configs
 %endif
 # for printing support
@@ -2040,10 +2040,10 @@ else
   return
   end
 end
--- run content of included file with fake args
+arg = nil ;  -- it is better to null the arg up, no meter if they exists or not, and use cjc as module in unified way, instead of relaying on "main" method during require "copy_jdk_configs.lua"
 cjc = require "copy_jdk_configs.lua"
-arg = {"--currentjvm", "%{uniquesuffix %{nil}}", "--jvmdir", "%{_jvmdir %{nil}}", "--origname", "%{name}", "--origjavaver", "%{javaver}", "--arch", "%{_arch}", "--temp", "%{rpm_state_dir}/%{name}.%{_arch}"}
-cjc.mainProgram(arg)
+args = {"--currentjvm", "%{uniquesuffix %{nil}}", "--jvmdir", "%{_jvmdir %{nil}}", "--origname", "%{name}", "--origjavaver", "%{javaver}", "--arch", "%{_arch}", "--temp", "%{rpm_state_dir}/%{name}.%{_arch}"}
+cjc.mainProgram(args)
 
 %post
 %{post_script %{nil}}
@@ -2230,6 +2230,9 @@ cjc.mainProgram(arg)
 %endif
 
 %changelog
+* Fri May 07 2021 Jiri Vanek <jvanek@redhat.com> -1:16.0.1.0.9-3.rolling
+- removed cjc backward comaptiblity, to fix when both rpm 4.16 and 4.17 are in transaction
+
 * Fri Apr 29 2021 Jiri Vanek <jvanek@redhat.com> -  1:16.0.1.0.9-2.rolling
 - adapted to newst cjc to fix issue with rpm 4.17
 - Disable copy-jdk-configs for Flatpak builds
