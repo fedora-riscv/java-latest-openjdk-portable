@@ -125,6 +125,8 @@
 %global zgc_arches x86_64
 # Set of architectures for which alt-java has SSB mitigation
 %global ssbd_arches x86_64
+# Set of architectures for which java has short vector math library (libsvml.so)
+%global svml_arches x86_64
 
 # By default, we build a debug build during main build on JIT architectures
 %if %{with slowdebug}
@@ -272,14 +274,14 @@
 %endif
 
 # New Version-String scheme-style defines
-%global featurever 16
+%global featurever 17
 %global interimver 0
-%global updatever 1
+%global updatever 0
 %global patchver 0
 # If you bump featurever, you must bump also vendor_version_string
-# Used via new version scheme. JDK 16 was
-# GA'ed in March 2020 => 21.3
-%global vendor_version_string 21.3
+# Used via new version scheme. JDK 17 was
+# GA'ed in September 2021 => 21.9
+%global vendor_version_string 21.9
 # buildjdkver is usually same as %%{featurever},
 # but in time of bootstrap of next jdk, it is featurever-1,
 # and this it is better to change it here, on single place
@@ -297,8 +299,8 @@
 %global origin_nice     OpenJDK
 %global top_level_dir_name   %{origin}
 %global top_level_dir_name_backup %{top_level_dir_name}-backup
-%global buildver        9
-%global rpmrelease      3
+%global buildver        26
+%global rpmrelease      0
 # Priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 # Using 10 digits may overflow the int used for priority, so we combine the patch and build versions
@@ -321,7 +323,7 @@
 # Release will be (where N is usually a number starting at 1):
 # - 0.N%%{?extraver}%%{?dist} for EA releases,
 # - N%%{?extraver}{?dist} for GA releases
-%global is_ga           1
+%global is_ga           0
 %if %{is_ga}
 %global build_type GA
 %global expected_ea_designator ""
@@ -449,7 +451,6 @@ alternatives \\
   --slave %{_jvmdir}/jre jre %{_jvmdir}/%{sdkdir -- %{?1}} \\
   --slave %{_bindir}/%{alt_java_name} %{alt_java_name} %{jrebindir -- %{?1}}/%{alt_java_name} \\
   --slave %{_bindir}/keytool keytool %{jrebindir -- %{?1}}/keytool \\
-  --slave %{_bindir}/rmid rmid %{jrebindir -- %{?1}}/rmid \\
   --slave %{_bindir}/rmiregistry rmiregistry %{jrebindir -- %{?1}}/rmiregistry \\
   --slave %{_mandir}/man1/java.1$ext java.1$ext \\
   %{_mandir}/man1/java-%{uniquesuffix -- %{?1}}.1$ext \\
@@ -457,8 +458,6 @@ alternatives \\
   %{_mandir}/man1/%{alt_java_name}-%{uniquesuffix -- %{?1}}.1$ext \\
   --slave %{_mandir}/man1/keytool.1$ext keytool.1$ext \\
   %{_mandir}/man1/keytool-%{uniquesuffix -- %{?1}}.1$ext \\
-  --slave %{_mandir}/man1/rmid.1$ext rmid.1$ext \\
-  %{_mandir}/man1/rmid-%{uniquesuffix -- %{?1}}.1$ext \\
   --slave %{_mandir}/man1/rmiregistry.1$ext rmiregistry.1$ext \\
   %{_mandir}/man1/rmiregistry-%{uniquesuffix -- %{?1}}.1$ext 
 
@@ -515,9 +514,6 @@ ext=.gz
 alternatives \\
   --install %{_bindir}/javac javac %{sdkbindir -- %{?1}}/javac $PRIORITY  --family %{name}.%{_arch} \\
   --slave %{_jvmdir}/java java_sdk %{_jvmdir}/%{sdkdir -- %{?1}} \\
-%ifarch %{aot_arches}
-  --slave %{_bindir}/jaotc jaotc %{sdkbindir -- %{?1}}/jaotc \\
-%endif
   --slave %{_bindir}/jlink jlink %{sdkbindir -- %{?1}}/jlink \\
   --slave %{_bindir}/jmod jmod %{sdkbindir -- %{?1}}/jmod \\
 %ifarch %{sa_arches}
@@ -669,7 +665,6 @@ exit 0
 %{_jvmdir}/%{sdkdir -- %{?1}}/bin/java
 %{_jvmdir}/%{sdkdir -- %{?1}}/bin/%{alt_java_name}
 %{_jvmdir}/%{sdkdir -- %{?1}}/bin/keytool
-%{_jvmdir}/%{sdkdir -- %{?1}}/bin/rmid
 %{_jvmdir}/%{sdkdir -- %{?1}}/bin/rmiregistry
 %dir %{_jvmdir}/%{sdkdir -- %{?1}}/lib
 %ifarch %{jit_arches}
@@ -715,6 +710,10 @@ exit 0
 %{_jvmdir}/%{sdkdir -- %{?1}}/lib/libsaproc.so
 %endif
 %{_jvmdir}/%{sdkdir -- %{?1}}/lib/libsctp.so
+%ifarch %{svml_arches}
+%{_jvmdir}/%{sdkdir -- %{?1}}/lib/libsvml.so
+%endif
+%{_jvmdir}/%{sdkdir -- %{?1}}/lib/libsyslookup.so
 %{_jvmdir}/%{sdkdir -- %{?1}}/lib/libverify.so
 %{_jvmdir}/%{sdkdir -- %{?1}}/lib/libzip.so
 %dir %{_jvmdir}/%{sdkdir -- %{?1}}/lib/jfr
@@ -723,7 +722,6 @@ exit 0
 %{_mandir}/man1/java-%{uniquesuffix -- %{?1}}.1*
 %{_mandir}/man1/%{alt_java_name}-%{uniquesuffix -- %{?1}}.1*
 %{_mandir}/man1/keytool-%{uniquesuffix -- %{?1}}.1*
-%{_mandir}/man1/rmid-%{uniquesuffix -- %{?1}}.1*
 %{_mandir}/man1/rmiregistry-%{uniquesuffix -- %{?1}}.1*
 %{_jvmdir}/%{sdkdir -- %{?1}}/lib/server/
 %ifarch %{share_arches}
@@ -742,7 +740,7 @@ exit 0
 %dir %{etcjavadir -- %{?1}}/conf/security/policy/limited
 %dir %{etcjavadir -- %{?1}}/conf/security/policy/unlimited
 %config(noreplace) %{etcjavadir -- %{?1}}/lib/security/default.policy
-%config(noreplace) %{etcjavadir -- %{?1}}/lib/security/blacklisted.certs
+%config(noreplace) %{etcjavadir -- %{?1}}/lib/security/blocked.certs
 %config(noreplace) %{etcjavadir -- %{?1}}/lib/security/public_suffix_list.dat
 %config(noreplace) %{etcjavadir -- %{?1}}/conf/security/policy/limited/exempt_local.policy
 %config(noreplace) %{etcjavadir -- %{?1}}/conf/security/policy/limited/default_local.policy
@@ -811,9 +809,6 @@ exit 0
 %{_jvmdir}/%{sdkdir -- %{?1}}/bin/jstat
 %{_jvmdir}/%{sdkdir -- %{?1}}/bin/jstatd
 %{_jvmdir}/%{sdkdir -- %{?1}}/bin/serialver
-%ifarch %{aot_arches}
-%{_jvmdir}/%{sdkdir -- %{?1}}/bin/jaotc
-%endif
 %{_jvmdir}/%{sdkdir -- %{?1}}/include
 %{_jvmdir}/%{sdkdir -- %{?1}}/lib/ct.sym
 %if %{with_systemtap}
@@ -843,9 +838,6 @@ exit 0
 %{_mandir}/man1/jmod-%{uniquesuffix -- %{?1}}.1.gz
 %{_mandir}/man1/jshell-%{uniquesuffix -- %{?1}}.1.gz
 %{_mandir}/man1/jfr-%{uniquesuffix -- %{?1}}.1.gz
-%ifarch %{aot_arches}
-%{_mandir}/man1/jaotc-%{uniquesuffix -- %{?1}}.1.gz
-%endif
 
 %if %{with_systemtap}
 %dir %{tapsetroot}
@@ -858,7 +850,6 @@ exit 0
 %ghost %{_bindir}/javac
 %ghost %{_jvmdir}/java
 %ghost %{_jvmdir}/%{alt_java_name}
-%ghost %{_bindir}/jaotc
 %ghost %{_bindir}/jlink
 %ghost %{_bindir}/jmod
 %ghost %{_bindir}/jhsdb
@@ -1117,7 +1108,7 @@ URL:      http://openjdk.java.net/
 
 # to regenerate source0 (jdk) run update_package.sh
 # update_package.sh contains hard-coded repos, revisions, tags, and projects to regenerate the source archives
-Source0: openjdk-jdk%{featurever}u-jdk-%{filever}+%{buildver}%{?tagsuffix:-%{tagsuffix}}.tar.xz
+Source0: openjdk-jdk%{featurever}-jdk-%{filever}+%{buildver}%{?tagsuffix:-%{tagsuffix}}.tar.xz
 #Source0: openjdk-jdk%{featurever}-jdk-%{filever}+%{buildver}.tar.xz
 
 # Use 'icedtea_sync.sh' to update the following
@@ -1642,7 +1633,7 @@ top_dir_abs_build_path=$(pwd)/%{buildoutputdir -- ${suffix}${loop}}
 # default pre-version supplied there (despite
 # what the file claims), so we pass it manually
 # to configure
-VERSION_FILE=${top_dir_abs_src_path}/make/autoconf/version-numbers
+VERSION_FILE=${top_dir_abs_src_path}/make/conf/version-numbers.conf
 if [ -f ${VERSION_FILE} ] ; then
     EA_DESIGNATOR=$(grep '^DEFAULT_PROMOTED_VERSION_PRE' ${VERSION_FILE} | cut -d '=' -f 2)
 else
@@ -1695,7 +1686,6 @@ bash ${top_dir_abs_src_path}/configure \
     --disable-warnings-as-errors
 
 make \
-    JAVAC_FLAGS=-g \
     LOG=trace \
     WARNINGS_ARE_ERRORS="-Wno-error" \
     CFLAGS_WARNINGS_ARE_ERRORS="-Wno-error" \
@@ -1796,6 +1786,14 @@ do
     echo "Testing $lib for debug symbols"
     # All these tests rely on RPM failing the build if the exit code of any set
     # of piped commands is non-zero.
+
+    # If this is the empty library, libsyslookup.so, of the foreign function and memory
+    # API incubation module (JEP 412), skip the debuginfo check as this seems unreliable
+    # on s390x. It's not very useful for other arches either, so skip unconditionally.
+    if [ "`basename $lib`" = "libsyslookup.so" ]; then
+       echo "Skipping debuginfo check for empty library 'libsyslookup.so'"
+       continue
+    fi
 
     # Test for .debug_* sections in the shared object. This is the main test
     # Stripped objects will not contain these
@@ -2230,6 +2228,18 @@ cjc.mainProgram(args)
 %endif
 
 %changelog
+* Fri Jun 11 2021 Petra Alice Mikova <pmikova@redhat.com> - 1:17.0.0.0.26-0.0.ea.rolling
+- update sources to jdk 17.0.0+26
+- set is_ga to 0, as this is early access build
+- change vendor_version_string
+- change path to the version-numbers.conf
+- removed rmid binary from files and from slaves
+- removed JAVAC_FLAGS=-g from make command, as it breaks the build since JDK-8258407
+- add lib/libsyslookup.so to files
+- renamed lib/security/blacklisted.certs to lib/security/blocked.certs
+- add lib/libsvml.so for intel
+- skip debuginfo check for libsyslookup.so on s390x
+
 * Fri May 07 2021 Jiri Vanek <jvanek@redhat.com> -1:16.0.1.0.9-3.rolling
 - removed cjc backward comaptiblity, to fix when both rpm 4.16 and 4.17 are in transaction
 
