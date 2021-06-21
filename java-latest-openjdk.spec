@@ -300,7 +300,7 @@
 %global top_level_dir_name   %{origin}
 %global top_level_dir_name_backup %{top_level_dir_name}-backup
 %global buildver        26
-%global rpmrelease      1
+%global rpmrelease      2
 # Priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 # Using 10 digits may overflow the int used for priority, so we combine the patch and build versions
@@ -1156,6 +1156,8 @@ Patch2:    rh1648644-java_access_bridge_privileged_security.patch
 Patch3:    rh649512-remove_uses_of_far_in_jpeg_libjpeg_turbo_1_4_compat_for_jdk10_and_up.patch
 # Follow system wide crypto policy RHBZ#1249083
 Patch4:    pr3183-rh1340845-support_fedora_rhel_system_crypto_policy.patch
+# PR3695: Allow use of system crypto policy to be disabled by the user
+Patch5:    pr3695-toggle_system_crypto_policy.patch
 # Depend on pcs-lite-libs instead of pcs-lite-devel as this is only in optional repo
 Patch6: rh1684077-openjdk_should_depend_on_pcsc-lite-libs_instead_of_pcsc-lite-devel.patch
 
@@ -1513,6 +1515,7 @@ pushd %{top_level_dir_name}
 %patch2 -p1
 %patch3 -p1
 %patch4 -p1
+%patch5 -p1
 %patch6 -p1
 popd # openjdk
 
@@ -1760,7 +1763,7 @@ $JAVA_HOME/bin/java $(echo $(basename %{SOURCE14})|sed "s|\.java||")
 
 # Check system crypto (policy) can be disabled
 $JAVA_HOME/bin/javac -d . %{SOURCE15}
-$JAVA_HOME/bin/java -Djava.security.disableSystemPropertiesFile=true $(echo $(basename %{SOURCE15})|sed "s|\.java||") ||  echo "crypto policy are now not honored i jdk15"
+$JAVA_HOME/bin/java -Djava.security.disableSystemPropertiesFile=true $(echo $(basename %{SOURCE15})|sed "s|\.java||")
 
 # Check java launcher has no SSB mitigation
 if ! nm $JAVA_HOME/bin/java | grep set_speculation ; then true ; else false; fi
@@ -2228,6 +2231,12 @@ cjc.mainProgram(args)
 %endif
 
 %changelog
+* Thu Jun 24 2021 Severin Gehwolf <sgehwolf@redhat.com> - 1:17.0.0.0.26-0.2.ea.rolling
+- Re-enable TestSecurityProperties after inclusion of PR3695
+
+* Thu Jun 24 2021 Andrew Hughes <gnu.andrew@redhat.com> - 1:17.0.0.0.26-0.2.ea.rolling
+- Add PR3695 to allow the system crypto policy to be turned off
+
 * Thu Jun 24 2021 Severin Gehwolf <sgehwolf@redhat.com> - 1:17.0.0.0.26-0.1.ea.rolling
 - Update buildjdkver to 17 so as to build with itself
 
