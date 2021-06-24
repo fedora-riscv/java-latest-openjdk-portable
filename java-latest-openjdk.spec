@@ -285,7 +285,7 @@
 # buildjdkver is usually same as %%{featurever},
 # but in time of bootstrap of next jdk, it is featurever-1,
 # and this it is better to change it here, on single place
-%global buildjdkver 16
+%global buildjdkver 17
 # We don't add any LTS designator for STS packages (this package).
 # Neither for Fedora nor EPEL which would have %%{rhel} macro defined.
  %global lts_designator ""
@@ -300,7 +300,7 @@
 %global top_level_dir_name   %{origin}
 %global top_level_dir_name_backup %{top_level_dir_name}-backup
 %global buildver        26
-%global rpmrelease      0
+%global rpmrelease      1
 # Priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 # Using 10 digits may overflow the int used for priority, so we combine the patch and build versions
@@ -2228,6 +2228,9 @@ cjc.mainProgram(args)
 %endif
 
 %changelog
+* Thu Jun 24 2021 Severin Gehwolf <sgehwolf@redhat.com> - 1:17.0.0.0.26-0.1.ea.rolling
+- Update buildjdkver to 17 so as to build with itself
+
 * Fri Jun 11 2021 Petra Alice Mikova <pmikova@redhat.com> - 1:17.0.0.0.26-0.0.ea.rolling
 - update sources to jdk 17.0.0+26
 - set is_ga to 0, as this is early access build
