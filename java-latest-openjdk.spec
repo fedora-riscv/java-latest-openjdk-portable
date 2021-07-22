@@ -1072,7 +1072,7 @@ Version: %{newjavaver}.%{buildver}
 # This package needs `.rolling` as part of Release so as to not conflict on install with
 # java-X-openjdk. I.e. when latest rolling release is also an LTS release packaged as
 # java-X-openjdk. See: https://bugzilla.redhat.com/show_bug.cgi?id=1647298
-Release: %{?eaprefix}%{rpmrelease}%{?extraver}.rolling%{?dist}
+Release: %{?eaprefix}%{rpmrelease}%{?extraver}.rolling%{?dist}.1
 # java-1.5.0-ibm from jpackage.org set Epoch to 1 for unknown reasons
 # and this change was brought into RHEL-4. java-1.5.0-ibm packages
 # also included the epoch in their virtual provides. This created a
@@ -2225,6 +2225,9 @@ cjc.mainProgram(args)
 %endif
 
 %changelog
+* Thu Jul 22 2021 Fedora Release Engineering <releng@fedoraproject.org> - 1:17.0.0.0.26-0.4.ea.rolling.1
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_35_Mass_Rebuild
+
 * Fri Jul 02 2021 Andrew Hughes <gnu.andrew@redhat.com> - 1:17.0.0.0.26-0.4.ea.rolling
 - Use the "reverse" build loop (debug first) as the main and only build loop to get more diagnostics.
 - Remove restriction on disabling product build, as debug packages no longer have javadoc packages.
