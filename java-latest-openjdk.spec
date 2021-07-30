@@ -297,8 +297,8 @@
 %global origin_nice     OpenJDK
 %global top_level_dir_name   %{origin}
 %global top_level_dir_name_backup %{top_level_dir_name}-backup
-%global buildver        26
-%global rpmrelease      4
+%global buildver        33
+%global rpmrelease      0
 # Priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 # Using 10 digits may overflow the int used for priority, so we combine the patch and build versions
@@ -1072,7 +1072,7 @@ Version: %{newjavaver}.%{buildver}
 # This package needs `.rolling` as part of Release so as to not conflict on install with
 # java-X-openjdk. I.e. when latest rolling release is also an LTS release packaged as
 # java-X-openjdk. See: https://bugzilla.redhat.com/show_bug.cgi?id=1647298
-Release: %{?eaprefix}%{rpmrelease}%{?extraver}.rolling%{?dist}.1
+Release: %{?eaprefix}%{rpmrelease}%{?extraver}.rolling%{?dist}
 # java-1.5.0-ibm from jpackage.org set Epoch to 1 for unknown reasons
 # and this change was brought into RHEL-4. java-1.5.0-ibm packages
 # also included the epoch in their virtual provides. This created a
@@ -2225,6 +2225,10 @@ cjc.mainProgram(args)
 %endif
 
 %changelog
+* Fri Jul 30 2021 Andrew Hughes <gnu.andrew@redhat.com> - 1:17.0.0.0.33-0.0.ea.rolling
+- Update to jdk-17+33, including JDWP fix and July 2021 CPU
+- Resolves: rhbz#1972529
+
 * Thu Jul 22 2021 Fedora Release Engineering <releng@fedoraproject.org> - 1:17.0.0.0.26-0.4.ea.rolling.1
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_35_Mass_Rebuild
 
