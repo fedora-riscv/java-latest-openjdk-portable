@@ -81,7 +81,7 @@
 # in alternatives those are slaves and master, very often triplicated by man pages
 # in files all masters and slaves are ghosted
 # the ghosts are here to allow installation via query like `dnf install /usr/bin/java`
-# you can list those files, with appropriate sections: cat *.spec | grep -e --install -e --slave -e post_ 
+# you can list those files, with appropriate sections: cat *.spec | grep -e --install -e --slave -e post_ -e alternatives
 # TODO - fix those hardcoded lists via single list
 # Those files must *NOT* be ghosted for *slowdebug* packages
 # FIXME - if you are moving jshell or jlink or similar, always modify all three sections
@@ -298,7 +298,7 @@
 %global top_level_dir_name   %{origin}
 %global top_level_dir_name_backup %{top_level_dir_name}-backup
 %global buildver        33
-%global rpmrelease      0
+%global rpmrelease      1
 # Priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 # Using 10 digits may overflow the int used for priority, so we combine the patch and build versions
@@ -432,12 +432,7 @@ update-desktop-database %{_datadir}/applications &> /dev/null || :
 exit 0
 }
 
-
-%define post_headless() %{expand:
-%ifarch %{share_arches}
-%{jrebindir -- %{?1}}/java -Xshare:dump >/dev/null 2>/dev/null
-%endif
-
+%define alternatives_java_install() %{expand:
 PRIORITY=%{priority}
 if [ "%{?1}" == %{debug_suffix} ]; then
   let PRIORITY=PRIORITY-1
@@ -463,8 +458,13 @@ for X in %{origin} %{javaver} ; do
   alternatives --install %{_jvmdir}/jre-"$X" jre_"$X" %{_jvmdir}/%{sdkdir -- %{?1}} $PRIORITY --family %{name}.%{_arch}
 done
 
-update-alternatives --install %{_jvmdir}/jre-%{javaver}-%{origin} jre_%{javaver}_%{origin} %{_jvmdir}/%{jrelnk -- %{?1}} $PRIORITY  --family %{name}.%{_arch}
+alternatives --install %{_jvmdir}/jre-%{javaver}-%{origin} jre_%{javaver}_%{origin} %{_jvmdir}/%{jrelnk -- %{?1}} $PRIORITY  --family %{name}.%{_arch}
+}
 
+%define post_headless() %{expand:
+%ifarch %{share_arches}
+%{jrebindir -- %{?1}}/java -Xshare:dump >/dev/null 2>/dev/null
+%endif
 
 update-desktop-database %{_datadir}/applications &> /dev/null || :
 /bin/touch --no-create %{_datadir}/icons/hicolor &>/dev/null || :
@@ -501,8 +501,8 @@ exit 0
 %{update_desktop_icons}
 }
 
-%define post_devel() %{expand:
 
+%define alternatives_javac_install() %{expand:
 PRIORITY=%{priority}
 if [ "%{?1}" == %{debug_suffix} ]; then
   let PRIORITY=PRIORITY-1
@@ -581,7 +581,9 @@ for X in %{origin} %{javaver} ; do
 done
 
 update-alternatives --install %{_jvmdir}/java-%{javaver}-%{origin} java_sdk_%{javaver}_%{origin} %{_jvmdir}/%{sdkdir -- %{?1}} $PRIORITY  --family %{name}.%{_arch}
+}
 
+%define post_devel() %{expand:
 update-desktop-database %{_datadir}/applications &> /dev/null || :
 /bin/touch --no-create %{_datadir}/icons/hicolor &>/dev/null || :
 
@@ -604,11 +606,11 @@ exit 0
 }
 
 %define posttrans_devel() %{expand:
+%{alternatives_javac_install --  %{?1}}
 %{update_desktop_icons}
 }
 
-%define post_javadoc() %{expand:
-
+%define alternatives_javadoc_install() %{expand:
 PRIORITY=%{priority}
 if [ "%{?1}" == %{debug_suffix} ]; then
   let PRIORITY=PRIORITY-1
@@ -625,8 +627,7 @@ exit 0
 exit 0
 }
 
-%define post_javadoc_zip() %{expand:
-
+%define alternatives_javadoczip_install() %{expand:
 PRIORITY=%{priority}
 if [ "%{?1}" == %{debug_suffix} ]; then
   let PRIORITY=PRIORITY-1
@@ -2055,6 +2056,9 @@ cjc.mainProgram(args)
 %posttrans
 %{posttrans_script %{nil}}
 
+%posttrans headless
+%{alternatives_java_install %{nil}}
+
 %post devel
 %{post_devel %{nil}}
 
@@ -2064,14 +2068,14 @@ cjc.mainProgram(args)
 %posttrans  devel
 %{posttrans_devel %{nil}}
 
-%post javadoc
-%{post_javadoc %{nil}}
+%posttrans javadoc
+%{alternatives_javadoc_install %{nil}}
 
 %postun javadoc
 %{postun_javadoc %{nil}}
 
-%post javadoc-zip
-%{post_javadoc_zip %{nil}}
+%posttrans javadoc-zip
+%{alternatives_javadoczip_install %{nil}}
 
 %postun javadoc-zip
 %{postun_javadoc_zip %{nil}}
@@ -2083,6 +2087,9 @@ cjc.mainProgram(args)
 
 %post headless-slowdebug
 %{post_headless -- %{debug_suffix_unquoted}}
+
+%posttrans headless-slowdebug
+%{alternatives_java_install -- %{debug_suffix_unquoted}}
 
 %postun slowdebug
 %{postun_script -- %{debug_suffix_unquoted}}
@@ -2118,6 +2125,9 @@ cjc.mainProgram(args)
 
 %posttrans fastdebug
 %{posttrans_script -- %{fastdebug_suffix_unquoted}}
+
+%posttrans headless-fastdebug
+%{alternatives_java_install -- %{fastdebug_suffix_unquoted}}
 
 %post devel-fastdebug
 %{post_devel -- %{fastdebug_suffix_unquoted}}
@@ -2225,6 +2235,12 @@ cjc.mainProgram(args)
 %endif
 
 %changelog
+* Mon Aug 30 2021 Jiri Vanek <jvanek@redhat.com> - 1:17.0.0.0.33-0.1.ea.rolling
+- alternatives creation moved to posttrans
+- Thus fixing the old reisntall issue:
+- https://bugzilla.redhat.com/show_bug.cgi?id=1200302
+- https://bugzilla.redhat.com/show_bug.cgi?id=1976053
+
 * Fri Jul 30 2021 Andrew Hughes <gnu.andrew@redhat.com> - 1:17.0.0.0.33-0.0.ea.rolling
 - Update to jdk-17+33, including JDWP fix and July 2021 CPU
 - Resolves: rhbz#1972529
