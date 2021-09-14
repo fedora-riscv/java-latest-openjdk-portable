@@ -276,7 +276,7 @@
 %global interimver 0
 %global updatever 0
 %global patchver 0
-# If you bump featurever, you must bump also vendor_version_string
+# If you bump featurever, you must also bump vendor_version_string
 # Used via new version scheme. JDK 17 was
 # GA'ed in September 2021 => 21.9
 %global vendor_version_string 21.9
@@ -297,8 +297,8 @@
 %global origin_nice     OpenJDK
 %global top_level_dir_name   %{origin}
 %global top_level_dir_name_backup %{top_level_dir_name}-backup
-%global buildver        33
-%global rpmrelease      3
+%global buildver        35
+%global rpmrelease      1
 # Priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 # Using 10 digits may overflow the int used for priority, so we combine the patch and build versions
@@ -321,7 +321,7 @@
 # Release will be (where N is usually a number starting at 1):
 # - 0.N%%{?extraver}%%{?dist} for EA releases,
 # - N%%{?extraver}{?dist} for GA releases
-%global is_ga           0
+%global is_ga           1
 %if %{is_ga}
 %global build_type GA
 %global expected_ea_designator ""
@@ -2264,6 +2264,10 @@ cjc.mainProgram(args)
 %endif
 
 %changelog
+* Tue Sep 14 2021 Andrew Hughes <gnu.andrew@redhat.com> - 1:17.0.0.0.35-1.rolling
+- Update to jdk-17+35, also known as jdk-17-ga.
+- Switch to GA mode.
+
 * Wed Sep 08 2021 Andrew Hughes <gnu.andrew@redhat.com> - 1:17.0.0.0.33-0.3.ea.rolling
 - Minor code cleanups on FIPS detection patch and check for SECMOD_GetSystemFIPSEnabled in configure.
 - Remove unneeded Requires on NSS as it will now be dynamically linked and detected by RPM.
