@@ -298,7 +298,7 @@
 %global top_level_dir_name   %{origin}
 %global top_level_dir_name_backup %{top_level_dir_name}-backup
 %global buildver        35
-%global rpmrelease      1
+%global rpmrelease      2
 # Priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 # Using 10 digits may overflow the int used for priority, so we combine the patch and build versions
@@ -1176,6 +1176,8 @@ Patch1004: rh1860986-disable_tlsv1.3_in_fips_mode.patch
 Patch1007: rh1915071-always_initialise_configurator_access.patch
 # RH1929465: Improve system FIPS detection
 Patch1008: rh1929465-improve_system_FIPS_detection.patch
+# RH1995150: Disable non-FIPS crypto in SUN and SunEC security providers
+Patch1009: rh1995150-disable_non-fips_crypto.patch
 
 #############################################
 #
@@ -1538,6 +1540,7 @@ popd # openjdk
 %patch1004
 %patch1007
 %patch1008
+%patch1009
 
 # Extract systemtap tapsets
 %if %{with_systemtap}
@@ -2264,6 +2267,9 @@ cjc.mainProgram(args)
 %endif
 
 %changelog
+* Thu Sep 16 2021 Martin Balao <mbalao@redhat.com> - 1:17.0.0.0.35-2.rolling
+- Add patch to disable non-FIPS crypto in the SUN and SunEC security providers.
+
 * Tue Sep 14 2021 Andrew Hughes <gnu.andrew@redhat.com> - 1:17.0.0.0.35-1.rolling
 - Update to jdk-17+35, also known as jdk-17-ga.
 - Switch to GA mode.
