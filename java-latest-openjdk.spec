@@ -298,7 +298,7 @@
 %global top_level_dir_name   %{origin}
 %global top_level_dir_name_backup %{top_level_dir_name}-backup
 %global buildver        35
-%global rpmrelease      2
+%global rpmrelease      3
 # Priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 # Using 10 digits may overflow the int used for priority, so we combine the patch and build versions
@@ -2267,6 +2267,9 @@ cjc.mainProgram(args)
 %endif
 
 %changelog
+* Mon Sep 27 2021 Andrew Hughes <gnu.andrew@redhat.com> - 1:17.0.0.0.35-3.rolling
+- Update release notes to document the major changes between OpenJDK 11 & 17.
+
 * Thu Sep 16 2021 Martin Balao <mbalao@redhat.com> - 1:17.0.0.0.35-2.rolling
 - Add patch to disable non-FIPS crypto in the SUN and SunEC security providers.
 
