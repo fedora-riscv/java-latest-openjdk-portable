@@ -298,7 +298,7 @@
 %global top_level_dir_name   %{origin}
 %global top_level_dir_name_backup %{top_level_dir_name}-backup
 %global buildver        35
-%global rpmrelease      4
+%global rpmrelease      5
 # Priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 # Using 10 digits may overflow the int used for priority, so we combine the patch and build versions
@@ -1182,6 +1182,8 @@ Patch1009: rh1995150-disable_non-fips_crypto.patch
 # RH1996182: Login to the NSS software token in FIPS mode
 Patch1010: rh1996182-login_to_nss_software_token.patch
 Patch1012: rh1996182-extend_security_policy.patch
+# RH1991003: Allow plain key import unless com.redhat.fips.plainKeySupport is set to false
+Patch1013: rh1991003-enable_fips_keys_import.patch
 
 #############################################
 #
@@ -1548,6 +1550,7 @@ popd # openjdk
 %patch1010
 %patch1011
 %patch1012
+%patch1013
 
 # Extract systemtap tapsets
 %if %{with_systemtap}
@@ -2274,6 +2277,12 @@ cjc.mainProgram(args)
 %endif
 
 %changelog
+* Sun Oct 10 2021 Andrew Hughes <gnu.andrew@redhat.com> - 1:17.0.0.0.35-5.rolling
+- Allow plain key import to be disabled with -Dcom.redhat.fips.plainKeySupport=false
+
+* Sun Oct 10 2021 Martin Balao <mbalao@redhat.com> - 1:17.0.0.0.35-5.rolling
+- Add patch to allow plain key import.
+
 * Thu Sep 30 2021 Andrew Hughes <gnu.andrew@redhat.com> - 1:17.0.0.0.35-4.rolling
 - Fix unused function compiler warning found in systemconf.c
 - Extend the default security policy to accomodate PKCS11 accessing jdk.internal.access.
