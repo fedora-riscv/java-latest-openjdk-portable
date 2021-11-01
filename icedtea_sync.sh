@@ -23,6 +23,7 @@ ICEDTEA_URL=https://icedtea.classpath.org/download/source
 ICEDTEA_SIGNING_KEY=CFDA0F9B35964222
 
 ICEDTEA_HG_URL=https://icedtea.classpath.org/hg/icedtea11
+
 set -e
 
 RPM_DIR=${PWD}
