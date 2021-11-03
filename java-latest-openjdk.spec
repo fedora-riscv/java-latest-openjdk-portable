@@ -177,9 +177,9 @@
 %endif
 
 %ifarch %{bootstrap_arches}
-%global bootstrap_build 1
+%global bootstrap_build true
 %else
-%global bootstrap_build 1
+%global bootstrap_build false
 %endif
 
 %if %{include_staticlibs}
@@ -298,7 +298,7 @@
 %global top_level_dir_name   %{origin}
 %global top_level_dir_name_backup %{top_level_dir_name}-backup
 %global buildver        12
-%global rpmrelease      5
+%global rpmrelease      6
 # Priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 # Using 10 digits may overflow the int used for priority, so we combine the patch and build versions
@@ -1821,18 +1821,22 @@ for suffix in %{build_loop} ; do
       # Use system libraries
       link_opt="system"
       # Debug builds don't need same targets as release for
-      # build speed-up
-      maketargets="%{release_targets}"
+      # build speed-up. We also avoid bootstrapping these
+      # slower builds.
       if echo $debugbuild | grep -q "debug" ; then
-	maketargets="%{debug_targets}"
+        maketargets="%{debug_targets}"
+        run_bootstrap=false
+      else
+        maketargets="%{release_targets}"
+        run_bootstrap=%{bootstrap_build}
       fi
-%if %{bootstrap_build}
-      buildjdk ${bootbuilddir} ${systemjdk} "%{bootstrap_targets}" ${debugbuild} ${link_opt}
-      buildjdk ${builddir} $(pwd)/${bootbuilddir}/images/%{jdkimage} "${maketargets}" ${debugbuild} ${link_opt}
-      rm -rf ${bootbuilddir}
-%else
-      buildjdk ${builddir} ${systemjdk} "${maketargets}" ${debugbuild} ${link_opt}
-%endif
+      if ${run_bootstrap} ; then
+        buildjdk ${bootbuilddir} ${systemjdk} "%{bootstrap_targets}" ${debugbuild} ${link_opt}
+        buildjdk ${builddir} $(pwd)/${bootbuilddir}/images/%{jdkimage} "${maketargets}" ${debugbuild} ${link_opt}
+        rm -rf ${bootbuilddir}
+      else
+        buildjdk ${builddir} ${systemjdk} "${maketargets}" ${debugbuild} ${link_opt}
+      fi
       # Restore original source tree we modified by removing full in-tree sources
       rm -rf %{top_level_dir_name}
       mv %{top_level_dir_name_backup} %{top_level_dir_name}
@@ -2360,6 +2364,9 @@ cjc.mainProgram(args)
 %endif
 
 %changelog
+* Wed Nov 03 2021 Andrew Hughes <gnu.andrew@redhat.com> - 1:17.0.1.0.12-6.rolling
+- Turn off bootstrapping for slow debug builds, which are particularly slow on ppc64le.
+
 * Thu Oct 28 2021 Andrew Hughes <gnu.andrew@redhat.com> - 1:17.0.1.0.12-5.rolling
 - Sync desktop files with upstream IcedTea release 3.15.0 using new script
 
