@@ -298,7 +298,7 @@
 %global top_level_dir_name   %{origin}
 %global top_level_dir_name_backup %{top_level_dir_name}-backup
 %global buildver        12
-%global rpmrelease      10
+%global rpmrelease      11
 # Priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 # Using 10 digits may overflow the int used for priority, so we combine the patch and build versions
@@ -1058,10 +1058,10 @@ Requires(post):   %{alternatives_requires}
 Requires(postun): %{alternatives_requires}
 
 # Standard JPackage javadoc provides
-Provides: java-%{javaver}-javadoc%{?1} = %{epoch}:%{version}-%{release}
-Provides: java-%{javaver}-%{origin}-javadoc%{?1} = %{epoch}:%{version}-%{release}
+Provides: java-%{javaver}-javadoc%{?1}%{?2} = %{epoch}:%{version}-%{release}
+Provides: java-%{javaver}-%{origin}-javadoc%{?1}%{?2} = %{epoch}:%{version}-%{release}
 %if %is_system_jdk
-Provides: java-javadoc%{?1} = %{epoch}:%{version}-%{release}
+Provides: java-javadoc%{?1}%{?2} = %{epoch}:%{version}-%{release}
 %endif
 }
 
@@ -1537,7 +1537,7 @@ Group:   Documentation
 Requires: javapackages-filesystem
 Obsoletes: javadoc-slowdebug < 1:13.0.0.33-1.rolling
 
-%{java_javadoc_rpo %{nil}}
+%{java_javadoc_rpo -- %{nil} %{nil}}
 
 %description javadoc
 The %{origin_nice} %{featurever} API documentation.
@@ -1552,7 +1552,8 @@ Group:   Documentation
 Requires: javapackages-filesystem
 Obsoletes: javadoc-zip-slowdebug < 1:13.0.0.33-1.rolling
 
-%{java_javadoc_rpo %{nil}}
+%{java_javadoc_rpo -- %{nil} -zip}
+%{java_javadoc_rpo -- %{nil} %{nil}}
 
 %description javadoc-zip
 The %{origin_nice} %{featurever} API documentation compressed in a single archive.
@@ -2375,6 +2376,9 @@ cjc.mainProgram(args)
 %endif
 
 %changelog
+* Thu Dec 09 2021 Jiri Vanek <jvanek@redhat.com> - 1:17.0.1.0.12-11.rolling
+- javadoc-zip got its own provides next to plain javadoc ones
+
 * Thu Dec 09 2021 Jiri Vanek <jvanek@redhat.com> - 1:17.0.1.0.12-10.rolling
 - replaced tabs by sets of spaces to make rpmlint happy
 
