@@ -298,7 +298,7 @@
 %global top_level_dir_name   %{origin}
 %global top_level_dir_name_backup %{top_level_dir_name}-backup
 %global buildver        12
-%global rpmrelease      9
+%global rpmrelease      10
 # Priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 # Using 10 digits may overflow the int used for priority, so we combine the patch and build versions
@@ -1715,14 +1715,14 @@ function buildjdk() {
     # to configure
     VERSION_FILE=${top_dir_abs_src_path}/make/conf/version-numbers.conf
     if [ -f ${VERSION_FILE} ] ; then
-	EA_DESIGNATOR=$(grep '^DEFAULT_PROMOTED_VERSION_PRE' ${VERSION_FILE} | cut -d '=' -f 2)
+      EA_DESIGNATOR=$(grep '^DEFAULT_PROMOTED_VERSION_PRE' ${VERSION_FILE} | cut -d '=' -f 2)
     else
-	echo "Could not find OpenJDK version file.";
-	exit 16
+      echo "Could not find OpenJDK version file.";
+      exit 16
     fi
     if [ "x${EA_DESIGNATOR}" != "x%{expected_ea_designator}" ] ; then
-	echo "Spec file is configured for a %{build_type} build, but upstream version-pre setting is ${EA_DESIGNATOR}";
-	exit 17
+      echo "Spec file is configured for a %{build_type} build, but upstream version-pre setting is ${EA_DESIGNATOR}";
+      exit 17
     fi
 
     echo "Using output directory: ${outputdir}";
@@ -2375,6 +2375,9 @@ cjc.mainProgram(args)
 %endif
 
 %changelog
+* Thu Dec 09 2021 Jiri Vanek <jvanek@redhat.com> - 1:17.0.1.0.12-10.rolling
+- replaced tabs by sets of spaces to make rpmlint happy
+
 * Mov Nov 29 2021 Andrew Hughes <gnu.andrew@redhat.com> - 1:17.0.1.0.12-9.rolling
 - Handle Fedora in distro conditionals that currently only pertain to RHEL.
 
