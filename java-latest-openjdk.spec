@@ -298,7 +298,7 @@
 %global top_level_dir_name   %{origin}
 %global top_level_dir_name_backup %{top_level_dir_name}-backup
 %global buildver        12
-%global rpmrelease      13
+%global rpmrelease      14
 # Priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 # Using 10 digits may overflow the int used for priority, so we combine the patch and build versions
@@ -1284,6 +1284,9 @@ Patch1010: rh1996182-login_to_nss_software_token.patch
 Patch1012: rh1996182-extend_security_policy.patch
 # RH1991003: Allow plain key import unless com.redhat.fips.plainKeySupport is set to false
 Patch1013: rh1991003-enable_fips_keys_import.patch
+# RH2021263: Resolve outstanding FIPS issues
+Patch1014: rh2021263-fips_ensure_security_initialised.patch
+Patch1015: rh2021263-fips_missing_native_returns.patch
 
 #############################################
 #
@@ -1703,6 +1706,9 @@ popd # openjdk
 %patch1011
 %patch1012
 %patch1013
+%patch1014
+%patch1015
+
 %patch2000
 
 # Extract systemtap tapsets
@@ -2463,7 +2469,10 @@ cjc.mainProgram(args)
 %endif
 
 %changelog
-* Thu Dec 09 2021 Jiri Vanek <jvanek@redhat.com> - 1:17.0.1.0.12-12.rolling
+* Thu Jan 13 2022 Andrew Hughes <gnu.andrew@redhat.com> - 1:17.0.1.0.12-14.rolling
+- Fix FIPS issues in native code and with initialisation of java.security.Security
+
+* Thu Dec 09 2021 Jiri Vanek <jvanek@redhat.com> - 1:17.0.1.0.12-13.rolling
 - Storing and restoring alterntives during update manually
 - Fixing Bug 2001567 - update of JDK/JRE is removing its manually selected alterantives and select (as auto) system JDK/JRE
 -- The move of alternatives creation to posttrans to fix:
@@ -2483,7 +2492,7 @@ cjc.mainProgram(args)
 * Thu Dec 09 2021 Jiri Vanek <jvanek@redhat.com> - 1:17.0.1.0.12-10.rolling
 - replaced tabs by sets of spaces to make rpmlint happy
 
-* Mov Nov 29 2021 Andrew Hughes <gnu.andrew@redhat.com> - 1:17.0.1.0.12-9.rolling
+* Mon Nov 29 2021 Andrew Hughes <gnu.andrew@redhat.com> - 1:17.0.1.0.12-9.rolling
 - Handle Fedora in distro conditionals that currently only pertain to RHEL.
 
 * Fri Nov 05 2021 Andrew Hughes <gnu.andrew@redhat.com> - 1:17.0.1.0.12-8.rolling
