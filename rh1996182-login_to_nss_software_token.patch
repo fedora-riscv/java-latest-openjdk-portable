@@ -5,13 +5,13 @@ Date:   Sat Aug 28 00:35:44 2021 +0100
     RH1996182: Login to the NSS Software Token in FIPS Mode
 
 diff --git openjdk.orig/src/java.base/share/classes/module-info.java openjdk/src/java.base/share/classes/module-info.java
-index 39e69362458..aeb5fc2eb46 100644
+index 238735c0c8c..dbbf11bbb22 100644
 --- openjdk.orig/src/java.base/share/classes/module-info.java
 +++ openjdk/src/java.base/share/classes/module-info.java
-@@ -151,6 +151,7 @@ module java.base {
-         java.management,
+@@ -152,6 +152,7 @@ module java.base {
          java.naming,
          java.rmi,
+         jdk.charsets,
 +        jdk.crypto.cryptoki,
          jdk.crypto.ec,
          jdk.jartool,

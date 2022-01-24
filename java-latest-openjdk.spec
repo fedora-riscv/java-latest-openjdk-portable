@@ -284,7 +284,7 @@
 # New Version-String scheme-style defines
 %global featurever 17
 %global interimver 0
-%global updatever 1
+%global updatever 2
 %global patchver 0
 # If you bump featurever, you must also bump vendor_version_string
 # Used via new version scheme. JDK 17 was
@@ -294,10 +294,15 @@
 # but in time of bootstrap of next jdk, it is featurever-1,
 # and this it is better to change it here, on single place
 %global buildjdkver 17
-# We don't add any LTS designator for STS packages (this package).
-# Neither for Fedora nor EPEL which would have %%{rhel} macro defined.
+# We don't add any LTS designator for STS packages (Fedora and EPEL).
+# We need to explicitly exclude EPEL as it would have the %%{rhel} macro defined.
+%if 0%{?rhel} && !0%{?epel}
+  %global lts_designator "LTS"
+  %global lts_designator_zip -%{lts_designator}
+%else
  %global lts_designator ""
  %global lts_designator_zip ""
+%endif
 
 # Define IcedTea version used for SystemTap tapsets and desktop file
 %global icedteaver      6.0.0pre00-c848b93a8598
@@ -307,8 +312,8 @@
 %global origin_nice     OpenJDK
 %global top_level_dir_name   %{origin}
 %global top_level_dir_name_backup %{top_level_dir_name}-backup
-%global buildver        12
-%global rpmrelease      16
+%global buildver        8
+%global rpmrelease      1
 # Priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 # Using 10 digits may overflow the int used for priority, so we combine the patch and build versions
@@ -808,7 +813,7 @@ exit 0
 %{_jvmdir}/%{sdkdir -- %{?1}}/lib/libsctp.so
 %{_jvmdir}/%{sdkdir -- %{?1}}/lib/libsystemconf.so
 %ifarch %{svml_arches}
-%{_jvmdir}/%{sdkdir -- %{?1}}/lib/libsvml.so
+%{_jvmdir}/%{sdkdir -- %{?1}}/lib/libjsvml.so
 %endif
 %{_jvmdir}/%{sdkdir -- %{?1}}/lib/libsyslookup.so
 %{_jvmdir}/%{sdkdir -- %{?1}}/lib/libverify.so
@@ -1304,9 +1309,6 @@ Patch1016: rh2021263-fips_separate_policy_and_fips_init.patch
 # OpenJDK patches in need of upstreaming
 #
 #############################################
-# JDK-8276572: Fake libsyslookup.so library causes tooling issues
-Patch2000: jdk8276572-fake_libsyslookup_causes_tooling_issues.patch
-
 
 BuildRequires: autoconf
 BuildRequires: automake
@@ -1720,8 +1722,6 @@ popd # openjdk
 %patch1014
 %patch1015
 %patch1016
-
-%patch2000
 
 # Extract systemtap tapsets
 %if %{with_systemtap}
@@ -2477,6 +2477,16 @@ cjc.mainProgram(args)
 %endif
 
 %changelog
+* Mon Jan 24 2022 Andrew Hughes <gnu.andrew@redhat.com> - 1:17.0.2.0.8-1.rolling
+- January 2022 security update to jdk 17.0.2+8
+- Extend LTS check to exclude EPEL.
+- Rename libsvml.so to libjsvml.so following JDK-8276025
+- Remove JDK-8276572 patch which is now upstream.
+- Rebase RH1995150 & RH1996182 patches following JDK-8275863 addition to module-info.java
+
+* Mon Jan 24 2022 Severin Gehwolf <sgehwolf@redhat.com> - 1:17.0.2.0.8-1.rolling
+- Set LTS designator.
+
 * Mon Jan 24 2022 Andrew Hughes <gnu.andrew@redhat.com> - 1:17.0.1.0.12-16.rolling
 - Separate crypto policy initialisation from FIPS initialisation, now they are no longer interdependent
 
