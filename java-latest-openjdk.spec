@@ -21,6 +21,8 @@
 %bcond_without release
 # Enable static library builds by default.
 %bcond_without staticlibs
+# Build a fresh libjvm.so for use in a copy of the bootstrap JDK
+%bcond_without fresh_libjvm
 
 # Workaround for stripping of debug symbols from static libraries
 %if %{with staticlibs}
@@ -28,6 +30,13 @@
 %global include_staticlibs 1
 %else
 %global include_staticlibs 0
+%endif
+
+# Define whether to use the bootstrap JDK directly or with a fresh libjvm.so
+%if %{with fresh_libjvm}
+%global build_hotspot_first 1
+%else
+%global build_hotspot_first 0
 %endif
 
 # The -g flag says to use strip -g instead of full strip on DSOs or EXEs.
@@ -104,11 +113,11 @@
 # Set of architectures for which we build fastdebug builds
 %global fastdebug_arches x86_64 ppc64le aarch64
 # Set of architectures with a Just-In-Time (JIT) compiler
-%global jit_arches      %{debug_arches} %{arm}
+%global jit_arches      %{arm} %{aarch64} %{power64} s390x sparcv9 sparc64 x86_64
 # Set of architectures which use the Zero assembler port (!jit_arches)
-%global zero_arches ppc s390
+%global zero_arches ppc s390 %{ix86}
 # Set of architectures which run a full bootstrap cycle
-%global bootstrap_arches %{jit_arches}
+%global bootstrap_arches %{jit_arches} %{ix86}
 # Set of architectures which support SystemTap tapsets
 %global systemtap_arches %{jit_arches}
 # Set of architectures with a Ahead-Of-Time (AOT) compiler
@@ -176,7 +185,7 @@
 %global fastdebug_build %{nil}
 %endif
 
-# If you disable both builds, then the build fails
+# If you disable all builds, then the build fails
 # Build and test slowdebug first as it provides the best diagnostics
 %global build_loop %{slowdebug_build} %{fastdebug_build} %{normal_build}
 
@@ -210,6 +219,11 @@
 %global release_targets images docs-zip
 # No docs nor bootcycle for debug builds
 %global debug_targets images
+# Target to use to just build HotSpot
+%global hotspot_target hotspot
+
+# JDK to use for bootstrapping
+%global bootjdk /usr/lib/jvm/java-%{buildjdkver}-openjdk
 
 
 # Filter out flags from the optflags macro that cause problems with the OpenJDK build
@@ -325,7 +339,7 @@
 %global top_level_dir_name   %{origin}
 %global top_level_dir_name_backup %{top_level_dir_name}-backup
 %global buildver        8
-%global rpmrelease      2
+%global rpmrelease      3
 # Priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 # Using 10 digits may overflow the int used for priority, so we combine the patch and build versions
@@ -607,7 +621,9 @@ alternatives \\
   --slave %{_bindir}/jlink jlink %{sdkbindir -- %{?1}}/jlink \\
   --slave %{_bindir}/jmod jmod %{sdkbindir -- %{?1}}/jmod \\
 %ifarch %{sa_arches}
+%ifnarch %{zero_arches}
   --slave %{_bindir}/jhsdb jhsdb %{sdkbindir -- %{?1}}/jhsdb \\
+%endif
 %endif
   --slave %{_bindir}/jar jar %{sdkbindir -- %{?1}}/jar \\
   --slave %{_bindir}/jarsigner jarsigner %{sdkbindir -- %{?1}}/jarsigner \\
@@ -820,7 +836,9 @@ exit 0
 %{_jvmdir}/%{sdkdir -- %{?1}}/lib/librmi.so
 # Some architectures don't have the serviceability agent
 %ifarch %{sa_arches}
+%ifnarch %{zero_arches}
 %{_jvmdir}/%{sdkdir -- %{?1}}/lib/libsaproc.so
+%endif
 %endif
 %{_jvmdir}/%{sdkdir -- %{?1}}/lib/libsctp.so
 %{_jvmdir}/%{sdkdir -- %{?1}}/lib/libsystemconf.so
@@ -913,8 +931,10 @@ exit 0
 %{_jvmdir}/%{sdkdir -- %{?1}}/bin/jimage
 # Some architectures don't have the serviceability agent
 %ifarch %{sa_arches}
+%ifnarch %{zero_arches}
 %{_jvmdir}/%{sdkdir -- %{?1}}/bin/jhsdb
 %{_mandir}/man1/jhsdb-%{uniquesuffix -- %{?1}}.1.gz
+%endif
 %endif
 %{_jvmdir}/%{sdkdir -- %{?1}}/bin/jinfo
 %{_jvmdir}/%{sdkdir -- %{?1}}/bin/jlink
@@ -1355,7 +1375,7 @@ BuildRequires: zip
 BuildRequires: javapackages-filesystem
 BuildRequires: java-latest-openjdk-devel
 # Zero-assembler build requirement
-%ifnarch %{jit_arches}
+%ifarch %{zero_arches}
 BuildRequires: libffi-devel
 %endif
 BuildRequires: tzdata-java >= 2015d
@@ -1821,7 +1841,12 @@ EXTRA_CPP_FLAGS="%ourcppflags"
 # fix rpmlint warnings
 EXTRA_CFLAGS="$EXTRA_CFLAGS -fno-strict-aliasing"
 %endif
-export EXTRA_CFLAGS
+%ifarch %{ix86}
+# Align stack boundary on x86_32
+EXTRA_CFLAGS="$(echo ${EXTRA_CFLAGS} | sed -e 's|-mstackrealign|-mincoming-stack-boundary=2 -mpreferred-stack-boundary=4|')"
+EXTRA_CPP_FLAGS="$(echo ${EXTRA_CPP_FLAGS} | sed -e 's|-mstackrealign|-mincoming-stack-boundary=2 -mpreferred-stack-boundary=4|')"
+%endif
+export EXTRA_CFLAGS EXTRA_CPP_FLAGS
 
 function buildjdk() {
     local outputdir=${1}
@@ -1863,7 +1888,7 @@ function buildjdk() {
     pushd ${outputdir}
 
     bash ${top_dir_abs_src_path}/configure \
-%ifnarch %{jit_arches}
+%ifarch %{zero_arches}
     --with-jvm-variants=zero \
 %endif
 %ifarch %{ppc64le}
@@ -1914,33 +1939,45 @@ function buildjdk() {
 function installjdk() {
     local imagepath=${1}
 
-    # the build (erroneously) removes read permissions from some jars
-    # this is a regression in OpenJDK 7 (our compiler):
-    # http://icedtea.classpath.org/bugzilla/show_bug.cgi?id=1437
-    find ${imagepath} -iname '*.jar' -exec chmod ugo+r {} \;
+    if [ -d ${imagepath} ] ; then
+	# the build (erroneously) removes read permissions from some jars
+	# this is a regression in OpenJDK 7 (our compiler):
+	# http://icedtea.classpath.org/bugzilla/show_bug.cgi?id=1437
+	find ${imagepath} -iname '*.jar' -exec chmod ugo+r {} \;
 
-    # Build screws up permissions on binaries
-    # https://bugs.openjdk.java.net/browse/JDK-8173610
-    find ${imagepath} -iname '*.so' -exec chmod +x {} \;
-    find ${imagepath}/bin/ -exec chmod +x {} \;
+	# Build screws up permissions on binaries
+	# https://bugs.openjdk.java.net/browse/JDK-8173610
+	find ${imagepath} -iname '*.so' -exec chmod +x {} \;
+	find ${imagepath}/bin/ -exec chmod +x {} \;
 
-    # Install nss.cfg right away as we will be using the JRE above
-    install -m 644 nss.cfg ${imagepath}/conf/security/
+	# Install nss.cfg right away as we will be using the JRE above
+	install -m 644 nss.cfg ${imagepath}/conf/security/
 
-    # Install nss.fips.cfg: NSS configuration for global FIPS mode (crypto-policies)
-    install -m 644 nss.fips.cfg ${imagepath}/conf/security/
+	# Install nss.fips.cfg: NSS configuration for global FIPS mode (crypto-policies)
+	install -m 644 nss.fips.cfg ${imagepath}/conf/security/
 
-    # Use system-wide tzdata
-    rm ${imagepath}/lib/tzdb.dat
-    ln -s %{_datadir}/javazi-1.8/tzdb.dat ${imagepath}/lib/tzdb.dat
+	# Use system-wide tzdata
+	rm ${imagepath}/lib/tzdb.dat
+	ln -s %{_datadir}/javazi-1.8/tzdb.dat ${imagepath}/lib/tzdb.dat
 
-    # Create fake alt-java as a placeholder for future alt-java
-    pushd ${imagepath}
-    # add alt-java man page
-    echo "Hardened java binary recommended for launching untrusted code from the Web e.g. javaws" > man/man1/%{alt_java_name}.1
-    cat man/man1/java.1 >> man/man1/%{alt_java_name}.1
-    popd
+	# Create fake alt-java as a placeholder for future alt-java
+	pushd ${imagepath}
+	# add alt-java man page
+	echo "Hardened java binary recommended for launching untrusted code from the Web e.g. javaws" > man/man1/%{alt_java_name}.1
+	cat man/man1/java.1 >> man/man1/%{alt_java_name}.1
+	popd
+    fi
 }
+
+%if %{build_hotspot_first}
+  # Build a fresh libjvm.so first and use it to bootstrap
+  cp -LR --preserve=mode,timestamps %{bootjdk} newboot
+  systemjdk=$(pwd)/newboot
+  buildjdk build/newboot ${systemjdk} %{hotspot_target} "release" "bundled"
+  mv build/newboot/jdk/lib/server/libjvm.so newboot/lib/server
+%else
+  systemjdk=%{bootjdk}
+%endif
 
 for suffix in %{build_loop} ; do
 
@@ -1951,7 +1988,6 @@ for suffix in %{build_loop} ; do
       debugbuild=`echo $suffix  | sed "s/-//g"`
   fi
 
-  systemjdk=/usr/lib/jvm/java-%{buildjdkver}-openjdk
 
   for loop in %{main_suffix} %{staticlibs_loop} ; do
 
@@ -2497,6 +2533,13 @@ cjc.mainProgram(args)
 %endif
 
 %changelog
+* Fri Feb 04 2022 Andrew Hughes <gnu.andrew@redhat.com> - 1:17.0.2.0.8-3
+- Temporarily move x86 to use Zero in order to get a working build
+- Replace -mstackrealign with -mincoming-stack-boundary=2 -mpreferred-stack-boundary=4 on x86_32 for stack alignment
+- Support a HotSpot-only build so a freshly built libjvm.so can then be used in the bootstrap JDK.
+- Explicitly list JIT architectures rather than relying on those with slowdebug builds
+- Disable the serviceability agent on Zero architectures even when the architecture itself is supported
+
 * Mon Jan 24 2022 Andrew Hughes <gnu.andrew@redhat.com> - 1:17.0.2.0.8-2.rolling
 - Introduce stapinstall variable to set SystemTap arch directory correctly (e.g. arm64 on aarch64)
 - Need to support noarch for creating source RPMs for non-scratch builds.
