@@ -136,13 +136,8 @@
 %global ssbd_arches x86_64
 # Set of architectures for which java has short vector math library (libsvml.so)
 %global svml_arches x86_64
-# Set of architectures where we verify backtraces with gdb (ideally all)
-# Temporarily disable check on x86, x86_64, ppc64le and s390x as gdb crashes
-# ../../gdb/objfiles.h:510: internal-error: sect_index_data not initialized
-# A problem internal to GDB has been detected,
-# further debugging may prove unreliable.
-# See https://bugzilla.redhat.com/show_bug.cgi?id=2041970
-%global gdb_arches sparcv9 sparc64 %{aarch64} %{arm} %{zero_arches}
+# Set of architectures where we verify backtraces with gdb
+%global gdb_arches %{jit_arches} %{zero_arches}
 
 # By default, we build a debug build during main build on JIT architectures
 %if %{with slowdebug}
@@ -339,7 +334,7 @@
 %global top_level_dir_name   %{origin}
 %global top_level_dir_name_backup %{top_level_dir_name}-backup
 %global buildver        8
-%global rpmrelease      3
+%global rpmrelease      4
 # Priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 # Using 10 digits may overflow the int used for priority, so we combine the patch and build versions
@@ -2533,6 +2528,10 @@ cjc.mainProgram(args)
 %endif
 
 %changelog
+* Mon Feb 07 2022 Severin Gehwolf <sgehwolf@redhat.com> - 1:17.0.2.0.8-4
+- Re-enable gdb backtrace check.
+- Resolves RHBZ#2041970
+
 * Fri Feb 04 2022 Andrew Hughes <gnu.andrew@redhat.com> - 1:17.0.2.0.8-3
 - Temporarily move x86 to use Zero in order to get a working build
 - Replace -mstackrealign with -mincoming-stack-boundary=2 -mpreferred-stack-boundary=4 on x86_32 for stack alignment
