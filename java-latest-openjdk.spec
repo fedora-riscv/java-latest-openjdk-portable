@@ -113,11 +113,11 @@
 # Set of architectures for which we build fastdebug builds
 %global fastdebug_arches x86_64 ppc64le aarch64
 # Set of architectures with a Just-In-Time (JIT) compiler
-%global jit_arches      %{arm} %{aarch64} %{power64} s390x sparcv9 sparc64 x86_64
+%global jit_arches      %{arm} %{aarch64} %{ix86} %{power64} s390x sparcv9 sparc64 x86_64
 # Set of architectures which use the Zero assembler port (!jit_arches)
-%global zero_arches ppc s390 %{ix86}
+%global zero_arches ppc s390
 # Set of architectures which run a full bootstrap cycle
-%global bootstrap_arches %{jit_arches} %{ix86}
+%global bootstrap_arches %{jit_arches}
 # Set of architectures which support SystemTap tapsets
 %global systemtap_arches %{jit_arches}
 # Set of architectures with a Ahead-Of-Time (AOT) compiler
@@ -334,7 +334,7 @@
 %global top_level_dir_name   %{origin}
 %global top_level_dir_name_backup %{top_level_dir_name}-backup
 %global buildver        8
-%global rpmrelease      4
+%global rpmrelease      5
 # Priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 # Using 10 digits may overflow the int used for priority, so we combine the patch and build versions
@@ -1336,6 +1336,8 @@ Patch1016: rh2021263-fips_separate_policy_and_fips_init.patch
 # OpenJDK patches in need of upstreaming
 #
 #############################################
+# JDK-8282004: x86_32.ad rules that call SharedRuntime helpers should have CALL effects
+Patch7: jdk8282004-x86_32-missing_call_effects.patch
 
 BuildRequires: autoconf
 BuildRequires: automake
@@ -1740,6 +1742,7 @@ pushd %{top_level_dir_name}
 %patch4 -p1
 %patch5 -p1
 %patch6 -p1
+%patch7 -p1
 popd # openjdk
 
 %patch1000
@@ -2528,6 +2531,10 @@ cjc.mainProgram(args)
 %endif
 
 %changelog
+* Wed Feb 16 2022 Andrew Hughes <gnu.andrew@redhat.com> - 1:17.0.2.0.8-5
+- Reinstate JIT builds on x86_32.
+- Add JDK-8282004 to fix missing CALL effects on x86_32.
+
 * Mon Feb 07 2022 Severin Gehwolf <sgehwolf@redhat.com> - 1:17.0.2.0.8-4
 - Re-enable gdb backtrace check.
 - Resolves RHBZ#2041970
