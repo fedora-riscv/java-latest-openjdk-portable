@@ -1,6 +1,6 @@
-diff --git openjdk/src/java.base/share/conf/security/java.security openjdk/src/java.base/share/conf/security/java.security
-index 534bdae5a16..2df2b59cbf6 100644
---- openjdk/src/java.base/share/conf/security/java.security
+diff --git openjdk.orig/src/java.base/share/conf/security/java.security openjdk/src/java.base/share/conf/security/java.security
+index 68a9c1a2d08..7aa25eb2cb7 100644
+--- openjdk.orig/src/java.base/share/conf/security/java.security
 +++ openjdk/src/java.base/share/conf/security/java.security
 @@ -78,6 +78,7 @@ security.provider.tbd=SunMSCAPI
  security.provider.tbd=Apple
@@ -9,4 +9,4 @@ index 534bdae5a16..2df2b59cbf6 100644
 +#security.provider.tbd=SunPKCS11 ${java.home}/lib/security/nss.cfg
  
  #
- # A list of preferred providers for specific algorithms. These providers will
+ # Security providers used when global crypto-policies are set to FIPS.

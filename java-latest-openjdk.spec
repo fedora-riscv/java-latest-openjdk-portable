@@ -22,7 +22,7 @@
 # Enable static library builds by default.
 %bcond_without staticlibs
 # Build a fresh libjvm.so for use in a copy of the bootstrap JDK
-%bcond_without fresh_libjvm
+%bcond_with fresh_libjvm
 
 # Workaround for stripping of debug symbols from static libraries
 %if %{with staticlibs}
@@ -220,6 +220,12 @@
 # JDK to use for bootstrapping
 %global bootjdk /usr/lib/jvm/java-%{buildjdkver}-openjdk
 
+# VM variant being built
+%ifarch %{zero_arches}
+%global vm_variant zero
+%else
+%global vm_variant server
+%endif
 
 # Filter out flags from the optflags macro that cause problems with the OpenJDK build
 # We filter out -O flags so that the optimization of HotSpot is not lowered from O3 to O2
@@ -303,9 +309,9 @@
 %endif
 
 # New Version-String scheme-style defines
-%global featurever 17
+%global featurever 18
 %global interimver 0
-%global updatever 2
+%global updatever 0
 %global patchver 0
 # If you bump featurever, you must also bump vendor_version_string
 # Used via new version scheme. JDK 17 was
@@ -327,14 +333,16 @@
 
 # Define IcedTea version used for SystemTap tapsets and desktop file
 %global icedteaver      6.0.0pre00-c848b93a8598
+# Define current Git revision for the FIPS support patches
+%global fipsver 39968997e2e
 
 # Standard JPackage naming and versioning defines
 %global origin          openjdk
 %global origin_nice     OpenJDK
 %global top_level_dir_name   %{origin}
 %global top_level_dir_name_backup %{top_level_dir_name}-backup
-%global buildver        8
-%global rpmrelease      5
+%global buildver        37
+%global rpmrelease      1
 # Priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 # Using 10 digits may overflow the int used for priority, so we combine the patch and build versions
@@ -640,6 +648,7 @@ alternatives \\
   --slave %{_bindir}/jstack jstack %{sdkbindir -- %{?1}}/jstack \\
   --slave %{_bindir}/jstat jstat %{sdkbindir -- %{?1}}/jstat \\
   --slave %{_bindir}/jstatd jstatd %{sdkbindir -- %{?1}}/jstatd \\
+  --slave %{_bindir}/jwebserver jwebserver %{sdkbindir -- %{?1}}/jwebserver \\
   --slave %{_bindir}/serialver serialver %{sdkbindir -- %{?1}}/serialver \\
   --slave %{_mandir}/man1/jar.1$ext jar.1$ext \\
   %{_mandir}/man1/jar-%{uniquesuffix -- %{?1}}.1$ext \\
@@ -673,6 +682,8 @@ alternatives \\
   %{_mandir}/man1/jstack-%{uniquesuffix -- %{?1}}.1$ext \\
   --slave %{_mandir}/man1/jstat.1$ext jstat.1$ext \\
   %{_mandir}/man1/jstat-%{uniquesuffix -- %{?1}}.1$ext \\
+  --slave %{_mandir}/man1/jwebserver.1$ext jwebserver.1$ext \\
+  %{_mandir}/man1/jwebserver-%{uniquesuffix -- %{?1}}.1$ext \\
   --slave %{_mandir}/man1/jstatd.1$ext jstatd.1$ext \\
   %{_mandir}/man1/jstatd-%{uniquesuffix -- %{?1}}.1$ext \\
   --slave %{_mandir}/man1/serialver.1$ext serialver.1$ext \\
@@ -850,9 +861,9 @@ exit 0
 %{_mandir}/man1/%{alt_java_name}-%{uniquesuffix -- %{?1}}.1*
 %{_mandir}/man1/keytool-%{uniquesuffix -- %{?1}}.1*
 %{_mandir}/man1/rmiregistry-%{uniquesuffix -- %{?1}}.1*
-%{_jvmdir}/%{sdkdir -- %{?1}}/lib/server/
+%{_jvmdir}/%{sdkdir -- %{?1}}/lib/%{vm_variant}/
 %ifarch %{share_arches}
-%attr(444, root, root) %ghost %{_jvmdir}/%{sdkdir -- %{?1}}/lib/server/classes.jsa
+%attr(444, root, root) %ghost %{_jvmdir}/%{sdkdir -- %{?1}}/lib/%{vm_variant}/classes.jsa
 %endif
 %dir %{etcjavasubdir}
 %dir %{etcjavadir -- %{?1}}
@@ -942,6 +953,7 @@ exit 0
 %{_jvmdir}/%{sdkdir -- %{?1}}/bin/jstack
 %{_jvmdir}/%{sdkdir -- %{?1}}/bin/jstat
 %{_jvmdir}/%{sdkdir -- %{?1}}/bin/jstatd
+%{_jvmdir}/%{sdkdir -- %{?1}}/bin/jwebserver
 %{_jvmdir}/%{sdkdir -- %{?1}}/bin/serialver
 %{_jvmdir}/%{sdkdir -- %{?1}}/include
 %{_jvmdir}/%{sdkdir -- %{?1}}/lib/ct.sym
@@ -966,12 +978,14 @@ exit 0
 %{_mandir}/man1/jstack-%{uniquesuffix -- %{?1}}.1*
 %{_mandir}/man1/jstat-%{uniquesuffix -- %{?1}}.1*
 %{_mandir}/man1/jstatd-%{uniquesuffix -- %{?1}}.1*
+%{_mandir}/man1/jwebserver-%{uniquesuffix -- %{?1}}.1*
 %{_mandir}/man1/serialver-%{uniquesuffix -- %{?1}}.1*
 %{_mandir}/man1/jdeprscan-%{uniquesuffix -- %{?1}}.1.gz
 %{_mandir}/man1/jlink-%{uniquesuffix -- %{?1}}.1.gz
 %{_mandir}/man1/jmod-%{uniquesuffix -- %{?1}}.1.gz
 %{_mandir}/man1/jshell-%{uniquesuffix -- %{?1}}.1.gz
 %{_mandir}/man1/jfr-%{uniquesuffix -- %{?1}}.1.gz
+%{_mandir}/man1/jwebserver-%{uniquesuffix -- %{?1}}.1*
 
 %if %{with_systemtap}
 %dir %{tapsetroot}
@@ -1104,6 +1118,8 @@ OrderWithRequires: copy-jdk-configs
 %endif
 # for printing support
 Requires: cups-libs
+# for FIPS PKCS11 provider
+Requires: nss
 # Post requires alternatives to install tool alternatives
 Requires(post):   %{alternatives_requires}
 # Postun requires alternatives to uninstall tool alternatives
@@ -1252,7 +1268,7 @@ URL:      http://openjdk.java.net/
 
 # to regenerate source0 (jdk) run update_package.sh
 # update_package.sh contains hard-coded repos, revisions, tags, and projects to regenerate the source archives
-Source0: openjdk-jdk%{featurever}u-jdk-%{filever}+%{buildver}%{?tagsuffix:-%{tagsuffix}}.tar.xz
+Source0: openjdk-jdk%{featurever}-jdk-%{filever}+%{buildver}%{?tagsuffix:-%{tagsuffix}}.tar.xz
 
 # Use 'icedtea_sync.sh' to update the following
 # They are based on code contained in the IcedTea project (6.x).
@@ -1300,36 +1316,28 @@ Patch1:    rh1648242-accessible_toolkit_crash_do_not_break_jvm.patch
 # Restrict access to java-atk-wrapper classes
 Patch2:    rh1648644-java_access_bridge_privileged_security.patch
 Patch3:    rh649512-remove_uses_of_far_in_jpeg_libjpeg_turbo_1_4_compat_for_jdk10_and_up.patch
-# Follow system wide crypto policy RHBZ#1249083
-Patch4:    pr3183-rh1340845-support_fedora_rhel_system_crypto_policy.patch
-# PR3695: Allow use of system crypto policy to be disabled by the user
-Patch5:    pr3695-toggle_system_crypto_policy.patch
-# Depend on pcs-lite-libs instead of pcs-lite-devel as this is only in optional repo
+# Depend on pcsc-lite-libs instead of pcs-lite-devel as this is only in optional repo
 Patch6: rh1684077-openjdk_should_depend_on_pcsc-lite-libs_instead_of_pcsc-lite-devel.patch
 
-# FIPS support patches
+# Crypto policy and FIPS support patches
+# Patch is generated from the fips-18u tree at https://github.com/gnu-andrew/jdk/commits/fips-18u
+# as follows: git diff jdk-18+<update> > fips-18u-$(git show -s --format=%h HEAD).patch
+# Fixes currently included:
+# PR3183, RH1340845: Follow system wide crypto policy
+# PR3695: Allow use of system crypto policy to be disabled by the user
 # RH1655466: Support RHEL FIPS mode using SunPKCS11 provider
-Patch1001: rh1655466-global_crypto_and_fips.patch
 # RH1818909: No ciphersuites availale for SSLSocket in FIPS mode
-Patch1002: rh1818909-fips_default_keystore_type.patch
 # RH1860986: Disable TLSv1.3 with the NSS-FIPS provider until PKCS#11 v3.0 support is available
-Patch1004: rh1860986-disable_tlsv1.3_in_fips_mode.patch
 # RH1915071: Always initialise JavaSecuritySystemConfiguratorAccess
-Patch1007: rh1915071-always_initialise_configurator_access.patch
 # RH1929465: Improve system FIPS detection
-Patch1008: rh1929465-improve_system_FIPS_detection.patch
-Patch1011: rh1929465-dont_define_unused_throwioexception.patch
 # RH1995150: Disable non-FIPS crypto in SUN and SunEC security providers
-Patch1009: rh1995150-disable_non-fips_crypto.patch
 # RH1996182: Login to the NSS software token in FIPS mode
-Patch1010: rh1996182-login_to_nss_software_token.patch
-Patch1012: rh1996182-extend_security_policy.patch
 # RH1991003: Allow plain key import unless com.redhat.fips.plainKeySupport is set to false
-Patch1013: rh1991003-enable_fips_keys_import.patch
 # RH2021263: Resolve outstanding FIPS issues
-Patch1014: rh2021263-fips_ensure_security_initialised.patch
-Patch1015: rh2021263-fips_missing_native_returns.patch
-Patch1016: rh2021263-fips_separate_policy_and_fips_init.patch
+# RH2052819: Fix FIPS reliance on crypto policies
+# RH2052829: Detect NSS at Runtime for FIPS detection
+# RH2052070: Enable AlgorithmParameters and AlgorithmParameterGenerator services in FIPS mode
+Patch1001: fips-18u-%{fipsver}.patch
 
 #############################################
 #
@@ -1364,8 +1372,8 @@ BuildRequires: libXrandr-devel
 BuildRequires: libXrender-devel
 BuildRequires: libXt-devel
 BuildRequires: libXtst-devel
-# Requirements for setting up the nss.cfg and FIPS support
-BuildRequires: nss-devel >= 3.53
+# Requirement for setting up nss.cfg and nss.fips.cfg
+BuildRequires: nss-devel
 BuildRequires: pkgconfig
 BuildRequires: xorg-x11-proto-devel
 BuildRequires: zip
@@ -1739,27 +1747,15 @@ pushd %{top_level_dir_name}
 %patch1 -p1
 %patch2 -p1
 %patch3 -p1
-%patch4 -p1
-%patch5 -p1
 %patch6 -p1
 %patch7 -p1
+# Add crypto policy and FIPS support
+%patch1001 -p1
+# alt-java
+%patch600 -p1
+# nss.cfg PKCS11 support; must come last as it also alters java.security
+%patch1000 -p1
 popd # openjdk
-
-%patch1000
-%patch600
-%patch1001
-%patch1002
-%patch1004
-%patch1007
-%patch1008
-%patch1009
-%patch1010
-%patch1011
-%patch1012
-%patch1013
-%patch1014
-%patch1015
-%patch1016
 
 # Extract systemtap tapsets
 %if %{with_systemtap}
@@ -1903,7 +1899,7 @@ function buildjdk() {
     --with-boot-jdk=${buildjdk} \
     --with-debug-level=${debuglevel} \
     --with-native-debug-symbols="%{debug_symbols}" \
-    --enable-sysconf-nss \
+    --disable-sysconf-nss \
     --enable-unlimited-crypto \
     --with-zlib=system \
     --with-libjpeg=${link_opt} \
@@ -1972,7 +1968,7 @@ function installjdk() {
   cp -LR --preserve=mode,timestamps %{bootjdk} newboot
   systemjdk=$(pwd)/newboot
   buildjdk build/newboot ${systemjdk} %{hotspot_target} "release" "bundled"
-  mv build/newboot/jdk/lib/server/libjvm.so newboot/lib/server
+  mv build/newboot/jdk/lib/%{vm_variant}/libjvm.so newboot/lib/%{vm_variant}
 %else
   systemjdk=%{bootjdk}
 %endif
@@ -2531,6 +2527,21 @@ cjc.mainProgram(args)
 %endif
 
 %changelog
+* Wed Mar 16 2022 Andrew Hughes <gnu.andrew@redhat.com> - 1:18.0.0.0.37-1.rolling
+- Update to RC version of OpenJDK 18
+- Support JVM variant zero following JDK-8273494 no longer installing Zero's libjvm.so in the server directory
+- Disable HotSpot-only pre-build which is incompatible with the boot JDK being a different major version to that being built
+- Rebase FIPS patches from fips-18u branch and simplify by using a single patch from that repository
+- Detect NSS at runtime for FIPS detection
+- Turn off build-time NSS linking and go back to an explicit Requires on NSS
+- Enable AlgorithmParameters and AlgorithmParameterGenerator services in FIPS mode
+- Rebase RH1648249 nss.cfg patch so it applies after the FIPS patch
+
+* Wed Mar 16 2022 Petra Alice Mikova <pmikova@redhat.com> - 1:18.0.0.0.37-1.rolling
+- update to ea version of jdk18
+- add new slave jwebserver and corresponding manpage
+- adjust rh1684077-openjdk_should_depend_on_pcsc-lite-libs_instead_of_pcsc-lite-devel.patch
+
 * Wed Feb 16 2022 Andrew Hughes <gnu.andrew@redhat.com> - 1:17.0.2.0.8-5
 - Reinstate JIT builds on x86_32.
 - Add JDK-8282004 to fix missing CALL effects on x86_32.
