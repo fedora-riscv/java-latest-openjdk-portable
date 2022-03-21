@@ -315,12 +315,12 @@
 %global patchver 0
 # If you bump featurever, you must also bump vendor_version_string
 # Used via new version scheme. JDK 17 was
-# GA'ed in September 2021 => 21.9
-%global vendor_version_string 21.9
+# GA'ed in March 2022 => 22.3
+%global vendor_version_string 22.3
 # buildjdkver is usually same as %%{featurever},
 # but in time of bootstrap of next jdk, it is featurever-1,
 # and this it is better to change it here, on single place
-%global buildjdkver 17
+%global buildjdkver 18
 # We don't add any LTS designator for STS packages (Fedora and EPEL).
 # We need to explicitly exclude EPEL as it would have the %%{rhel} macro defined.
 %if 0%{?rhel} && !0%{?epel}
@@ -342,7 +342,7 @@
 %global top_level_dir_name   %{origin}
 %global top_level_dir_name_backup %{top_level_dir_name}-backup
 %global buildver        37
-%global rpmrelease      1
+%global rpmrelease      2
 # Priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 # Using 10 digits may overflow the int used for priority, so we combine the patch and build versions
@@ -2529,6 +2529,8 @@ cjc.mainProgram(args)
 %changelog
 * Mon Mar 21 2022 Jiri Vanek <jvanek@redhat.com> - 1:18.0.0.0.37-2.rolling
 - replaced tabs by sets of spaces to make rpmlint happy
+- set build jdk to 18
+- as ga is 1, set vendor_version_string to 22.3
 
 * Wed Mar 16 2022 Andrew Hughes <gnu.andrew@redhat.com> - 1:18.0.0.0.37-1.rolling
 - Update to RC version of OpenJDK 18
