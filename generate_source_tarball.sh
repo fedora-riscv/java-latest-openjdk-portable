@@ -8,8 +8,8 @@
 #
 # In any case you have to set PROJECT_NAME REPO_NAME and VERSION. eg:
 # PROJECT_NAME=openjdk
-# REPO_NAME=jdk16
-# VERSION=HEAD
+# REPO_NAME=jdk18
+# VERSION=jdk-18+37
 # or to eg prepare systemtap:
 # icedtea7's jstack and other tapsets
 # VERSION=6327cf1cea9e
@@ -130,7 +130,7 @@ pushd "${FILE_NAME_ROOT}"
                 # get PR3823.patch (from http://icedtea.classpath.org/hg/icedtea16) from most correct tag
                 # Do not push it or publish it (see https://icedtea.classpath.org/bugzilla/show_bug.cgi?id=3823)
 		echo "PR3823 not found. Downloading..."
-		wget https://icedtea.classpath.org/hg/icedtea16/raw-file/tip/patches/pr3823.patch
+		wget https://icedtea.wildebeest.org/hg/icedtea16/raw-file/tip/patches/pr3823.patch
 	        echo "Applying ${PWD}/pr3823.patch"
 		patch -Np1 < pr3823.patch
 		rm pr3823.patch
