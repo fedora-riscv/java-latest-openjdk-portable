@@ -1934,32 +1934,32 @@ function installjdk() {
     local imagepath=${1}
 
     if [ -d ${imagepath} ] ; then
-	# the build (erroneously) removes read permissions from some jars
-	# this is a regression in OpenJDK 7 (our compiler):
-	# http://icedtea.classpath.org/bugzilla/show_bug.cgi?id=1437
-	find ${imagepath} -iname '*.jar' -exec chmod ugo+r {} \;
+    # the build (erroneously) removes read permissions from some jars
+    # this is a regression in OpenJDK 7 (our compiler):
+    # http://icedtea.classpath.org/bugzilla/show_bug.cgi?id=1437
+    find ${imagepath} -iname '*.jar' -exec chmod ugo+r {} \;
 
-	# Build screws up permissions on binaries
-	# https://bugs.openjdk.java.net/browse/JDK-8173610
-	find ${imagepath} -iname '*.so' -exec chmod +x {} \;
-	find ${imagepath}/bin/ -exec chmod +x {} \;
+    # Build screws up permissions on binaries
+    # https://bugs.openjdk.java.net/browse/JDK-8173610
+    find ${imagepath} -iname '*.so' -exec chmod +x {} \;
+    find ${imagepath}/bin/ -exec chmod +x {} \;
 
-	# Install nss.cfg right away as we will be using the JRE above
-	install -m 644 nss.cfg ${imagepath}/conf/security/
+    # Install nss.cfg right away as we will be using the JRE above
+    install -m 644 nss.cfg ${imagepath}/conf/security/
 
-	# Install nss.fips.cfg: NSS configuration for global FIPS mode (crypto-policies)
-	install -m 644 nss.fips.cfg ${imagepath}/conf/security/
+    # Install nss.fips.cfg: NSS configuration for global FIPS mode (crypto-policies)
+    install -m 644 nss.fips.cfg ${imagepath}/conf/security/
 
-	# Use system-wide tzdata
-	rm ${imagepath}/lib/tzdb.dat
-	ln -s %{_datadir}/javazi-1.8/tzdb.dat ${imagepath}/lib/tzdb.dat
+    # Use system-wide tzdata
+    rm ${imagepath}/lib/tzdb.dat
+    ln -s %{_datadir}/javazi-1.8/tzdb.dat ${imagepath}/lib/tzdb.dat
 
-	# Create fake alt-java as a placeholder for future alt-java
-	pushd ${imagepath}
-	# add alt-java man page
-	echo "Hardened java binary recommended for launching untrusted code from the Web e.g. javaws" > man/man1/%{alt_java_name}.1
-	cat man/man1/java.1 >> man/man1/%{alt_java_name}.1
-	popd
+    # Create fake alt-java as a placeholder for future alt-java
+    pushd ${imagepath}
+    # add alt-java man page
+    echo "Hardened java binary recommended for launching untrusted code from the Web e.g. javaws" > man/man1/%{alt_java_name}.1
+    cat man/man1/java.1 >> man/man1/%{alt_java_name}.1
+    popd
     fi
 }
 
@@ -2527,6 +2527,9 @@ cjc.mainProgram(args)
 %endif
 
 %changelog
+* Mon Mar 21 2022 Jiri Vanek <jvanek@redhat.com> - 1:18.0.0.0.37-2.rolling
+- replaced tabs by sets of spaces to make rpmlint happy
+
 * Wed Mar 16 2022 Andrew Hughes <gnu.andrew@redhat.com> - 1:18.0.0.0.37-1.rolling
 - Update to RC version of OpenJDK 18
 - Support JVM variant zero following JDK-8273494 no longer installing Zero's libjvm.so in the server directory
