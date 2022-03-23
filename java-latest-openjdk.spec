@@ -22,7 +22,7 @@
 # Enable static library builds by default.
 %bcond_without staticlibs
 # Build a fresh libjvm.so for use in a copy of the bootstrap JDK
-%bcond_with fresh_libjvm
+%bcond_without fresh_libjvm
 
 # Workaround for stripping of debug symbols from static libraries
 %if %{with staticlibs}
@@ -30,13 +30,6 @@
 %global include_staticlibs 1
 %else
 %global include_staticlibs 0
-%endif
-
-# Define whether to use the bootstrap JDK directly or with a fresh libjvm.so
-%if %{with fresh_libjvm}
-%global build_hotspot_first 1
-%else
-%global build_hotspot_first 0
 %endif
 
 # The -g flag says to use strip -g instead of full strip on DSOs or EXEs.
@@ -217,9 +210,6 @@
 # Target to use to just build HotSpot
 %global hotspot_target hotspot
 
-# JDK to use for bootstrapping
-%global bootjdk /usr/lib/jvm/java-%{buildjdkver}-openjdk
-
 # VM variant being built
 %ifarch %{zero_arches}
 %global vm_variant zero
@@ -330,6 +320,16 @@
  %global lts_designator ""
  %global lts_designator_zip ""
 %endif
+# JDK to use for bootstrapping
+%global bootjdk /usr/lib/jvm/java-%{buildjdkver}-openjdk
+# Define whether to use the bootstrap JDK directly or with a fresh libjvm.so
+# This will only work where the bootstrap JDK is the same major version
+# as the JDK being built
+%if %{with fresh_libjvm} && %{buildjdkver} == %{featurever}
+%global build_hotspot_first 1
+%else
+%global build_hotspot_first 0
+%endif
 
 # Define IcedTea version used for SystemTap tapsets and desktop file
 %global icedteaver      6.0.0pre00-c848b93a8598
@@ -342,7 +342,7 @@
 %global top_level_dir_name   %{origin}
 %global top_level_dir_name_backup %{top_level_dir_name}-backup
 %global buildver        37
-%global rpmrelease      2
+%global rpmrelease      3
 # Priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 # Using 10 digits may overflow the int used for priority, so we combine the patch and build versions
@@ -1730,6 +1730,12 @@ if [ %{include_debug_build} -eq 0 -a  %{include_normal_build} -eq 0 -a  %{includ
   echo "You have disabled all builds (normal,fastdebug,slowdebug). That is a no go."
   exit 14
 fi
+
+%if %{with fresh_libjvm} && ! %{build_hotspot_first}
+echo "WARNING: The build of a fresh libjvm has been disabled due to a JDK version mismatch"
+echo "Build JDK version is %{buildjdkver}, feature JDK version is %{featurever}"
+%endif
+
 %setup -q -c -n %{uniquesuffix ""} -T -a 0
 # https://bugzilla.redhat.com/show_bug.cgi?id=1189084
 prioritylength=`expr length %{priority}`
@@ -2527,6 +2533,9 @@ cjc.mainProgram(args)
 %endif
 
 %changelog
+* Wed Mar 23 2022 Andrew Hughes <gnu.andrew@redhat.com> - 1:18.0.0.0.37-3.rolling
+- Automatically turn off building a fresh HotSpot first, if the bootstrap JDK is not the same major version as that being built
+
 * Mon Mar 21 2022 Jiri Vanek <jvanek@redhat.com> - 1:18.0.0.0.37-2.rolling
 - replaced tabs by sets of spaces to make rpmlint happy
 - set build jdk to 18
