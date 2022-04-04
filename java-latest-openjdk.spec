@@ -188,10 +188,14 @@
 %global staticlibs_loop %{nil}
 %endif
 
+%if 0%{?flatpak}
+%global bootstrap_build false
+%else
 %ifarch %{bootstrap_arches}
 %global bootstrap_build true
 %else
 %global bootstrap_build false
+%endif
 %endif
 
 %if %{include_staticlibs}
@@ -347,7 +351,7 @@
 %global top_level_dir_name   %{origin}
 %global top_level_dir_name_backup %{top_level_dir_name}-backup
 %global buildver        10
-%global rpmrelease      5
+%global rpmrelease      6
 # Priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 # Using 10 digits may overflow the int used for priority, so we combine the patch and build versions
@@ -2555,6 +2559,9 @@ cjc.mainProgram(args)
 %endif
 
 %changelog
+* Thu Jul 07 2022 Stephan Bergmann <sbergman@redhat.com> - 1:18.0.1.0.10-6.rolling
+- Fix flatpak builds by exempting them from bootstrap
+
 * Thu Jun 30 2022 Francisco Ferrari Bihurriet <fferrari@redhat.com> - 1:18.0.1.0.10-5.rolling
 - RH2007331: SecretKey generate/import operations don't add the CKA_SIGN attribute in FIPS mode
 
