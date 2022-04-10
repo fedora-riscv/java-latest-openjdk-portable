@@ -2533,6 +2533,9 @@ cjc.mainProgram(args)
 %endif
 
 %changelog
+* Wed Apr 06 2022 Jiri Vanek <jvanek@redhat.com> - 1:18.0.0.0.37-4.rolling
+- Remove hardcoded /usr/lib/jvm by %{_jvmdir} to make rpmlint happy
+
 * Wed Mar 23 2022 Andrew Hughes <gnu.andrew@redhat.com> - 1:18.0.0.0.37-3.rolling
 - Automatically turn off building a fresh HotSpot first, if the bootstrap JDK is not the same major version as that being built
 
