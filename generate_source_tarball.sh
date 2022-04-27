@@ -8,8 +8,8 @@
 #
 # In any case you have to set PROJECT_NAME REPO_NAME and VERSION. eg:
 # PROJECT_NAME=openjdk
-# REPO_NAME=jdk18
-# VERSION=jdk-18+37
+# REPO_NAME=jdk18u
+# VERSION=jdk-18.0.1-ga
 # or to eg prepare systemtap:
 # icedtea7's jstack and other tapsets
 # VERSION=6327cf1cea9e

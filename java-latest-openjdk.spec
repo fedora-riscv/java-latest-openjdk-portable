@@ -301,7 +301,7 @@
 # New Version-String scheme-style defines
 %global featurever 18
 %global interimver 0
-%global updatever 0
+%global updatever 1
 %global patchver 0
 # If you bump featurever, you must also bump vendor_version_string
 # Used via new version scheme. JDK 17 was
@@ -341,8 +341,8 @@
 %global origin_nice     OpenJDK
 %global top_level_dir_name   %{origin}
 %global top_level_dir_name_backup %{top_level_dir_name}-backup
-%global buildver        37
-%global rpmrelease      4
+%global buildver        0
+%global rpmrelease      1
 # Priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 # Using 10 digits may overflow the int used for priority, so we combine the patch and build versions
@@ -1268,7 +1268,7 @@ URL:      http://openjdk.java.net/
 
 # to regenerate source0 (jdk) run update_package.sh
 # update_package.sh contains hard-coded repos, revisions, tags, and projects to regenerate the source archives
-Source0: openjdk-jdk%{featurever}-jdk-%{filever}+%{buildver}%{?tagsuffix:-%{tagsuffix}}.tar.xz
+Source0: openjdk-jdk%{featurever}u-jdk-%{filever}+%{buildver}%{?tagsuffix:-%{tagsuffix}}.tar.xz
 
 # Use 'icedtea_sync.sh' to update the following
 # They are based on code contained in the IcedTea project (6.x).
@@ -2533,6 +2533,9 @@ cjc.mainProgram(args)
 %endif
 
 %changelog
+* Wed Apr 27 2022 Jiri Vanek <jvanek@redhat.com> - 1:18.0.1.0.0-1.rolling.
+- updated to CPU jdk-18.0.1 sources
+
 * Wed Apr 06 2022 Jiri Vanek <jvanek@redhat.com> - 1:18.0.0.0.37-4.rolling
 - Remove hardcoded /usr/lib/jvm by %{_jvmdir} to make rpmlint happy
 
