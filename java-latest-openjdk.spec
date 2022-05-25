@@ -130,7 +130,12 @@
 # Set of architectures for which java has short vector math library (libsvml.so)
 %global svml_arches x86_64
 # Set of architectures where we verify backtraces with gdb
+# s390x fails on RHEL 7 so we exclude it there
+%if (0%{?rhel} > 0 && 0%{?rhel} < 8)
+%global gdb_arches %{arm} %{aarch64} %{ix86} %{power64} sparcv9 sparc64 x86_64 %{zero_arches}
+%else
 %global gdb_arches %{jit_arches} %{zero_arches}
+%endif
 
 # By default, we build a debug build during main build on JIT architectures
 %if %{with slowdebug}
@@ -342,7 +347,7 @@
 %global top_level_dir_name   %{origin}
 %global top_level_dir_name_backup %{top_level_dir_name}-backup
 %global buildver        10
-%global rpmrelease      1
+%global rpmrelease      2
 # Priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 # Using 10 digits may overflow the int used for priority, so we combine the patch and build versions
@@ -2533,6 +2538,9 @@ cjc.mainProgram(args)
 %endif
 
 %changelog
+* Wed May 25 2022 Andrew Hughes <gnu.andrew@redhat.com> - 1:18.0.1.0.10-2.rolling
+- Exclude s390x from the gdb test on RHEL 7 where we see failures with the portable build
+
 * Wed Apr 27 2022 Jiri Vanek <jvanek@redhat.com> - 1:18.0.1.0.10-1.rolling.
 - updated to CPU jdk-18.0.1+10 sources
 
