@@ -371,7 +371,7 @@
 %global top_level_dir_name   %{origin}
 %global top_level_dir_name_backup %{top_level_dir_name}-backup
 %global buildver        2
-%global rpmrelease      1
+%global rpmrelease      2
 # Priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 # Using 10 digits may overflow the int used for priority, so we combine the patch and build versions
@@ -760,10 +760,19 @@ PRIORITY=%{priority}
 if [ "%{?1}" == %{debug_suffix} ]; then
   let PRIORITY=PRIORITY-1
 fi
+  for X in %{origin} %{javaver} ; do
+    key=javadocdir_"$X"
+    alternatives --install %{_javadocdir}/java-"$X" $key %{_javadocdir}/%{uniquejavadocdir -- %{?1}}/api $PRIORITY --family %{family_noarch}
+    %{set_if_needed_alternatives $key %{family_noarch}}
+  done
 
-key=javadocdir
-alternatives --install %{_javadocdir}/java $key %{_javadocdir}/%{uniquejavadocdir -- %{?1}}/api $PRIORITY  --family %{family_noarch}
-%{set_if_needed_alternatives  $key %{family_noarch}}
+  key=javadocdir_%{javaver}_%{origin}
+  alternatives --install %{_javadocdir}/java-%{javaver}-%{origin} $key %{_javadocdir}/%{uniquejavadocdir -- %{?1}}/api $PRIORITY --family %{family_noarch}
+  %{set_if_needed_alternatives  $key %{family_noarch}}
+
+  key=javadocdir
+  alternatives --install %{_javadocdir}/java $key %{_javadocdir}/%{uniquejavadocdir -- %{?1}}/api $PRIORITY --family %{family_noarch}
+  %{set_if_needed_alternatives  $key %{family_noarch}}
 exit 0
 }
 
@@ -773,6 +782,9 @@ if [ "x$debug"  == "xtrue" ] ; then
 fi
   post_state=$1 # from postun, https://docs.fedoraproject.org/en-US/packaging-guidelines/Scriptlets/#_syntax
   %{save_and_remove_alternatives  javadocdir  %{_javadocdir}/%{uniquejavadocdir -- %{?1}}/api $post_state %{family_noarch}}
+  %{save_and_remove_alternatives  javadocdir_%{origin} %{_javadocdir}/%{uniquejavadocdir -- %{?1}}/api $post_state %{family_noarch}}
+  %{save_and_remove_alternatives  javadocdir_%{javaver} %{_javadocdir}/%{uniquejavadocdir -- %{?1}}/api $post_state %{family_noarch}}
+  %{save_and_remove_alternatives  javadocdir_%{javaver}_%{origin} %{_javadocdir}/%{uniquejavadocdir -- %{?1}}/api $post_state %{family_noarch}}
 exit 0
 }
 
@@ -784,9 +796,20 @@ PRIORITY=%{priority}
 if [ "%{?1}" == %{debug_suffix} ]; then
   let PRIORITY=PRIORITY-1
 fi
-key=javadoczip
-alternatives --install %{_javadocdir}/java-zip $key %{_javadocdir}/%{uniquejavadocdir -- %{?1}}.zip $PRIORITY  --family %{family_noarch}
-%{set_if_needed_alternatives  $key %{family_noarch}}
+  for X in %{origin} %{javaver} ; do
+    key=javadoczip_"$X"
+    alternatives --install %{_javadocdir}/java-"$X".zip $key %{_javadocdir}/%{uniquejavadocdir -- %{?1}}.zip $PRIORITY --family %{family_noarch}
+    %{set_if_needed_alternatives $key %{family_noarch}}
+  done
+
+  key=javadoczip_%{javaver}_%{origin}
+  alternatives --install %{_javadocdir}/java-%{javaver}-%{origin}.zip $key %{_javadocdir}/%{uniquejavadocdir -- %{?1}}.zip $PRIORITY --family %{family_noarch}
+  %{set_if_needed_alternatives  $key %{family_noarch}}
+
+  # Weird legacy filename for backwards-compatibility
+  key=javadoczip
+  alternatives --install %{_javadocdir}/java-zip $key %{_javadocdir}/%{uniquejavadocdir -- %{?1}}.zip $PRIORITY  --family %{family_noarch}
+  %{set_if_needed_alternatives  $key %{family_noarch}}
 exit 0
 }
 
@@ -796,6 +819,9 @@ exit 0
   fi
   post_state=$1 # from postun, https://docs.fedoraproject.org/en-US/packaging-guidelines/Scriptlets/#_syntax
   %{save_and_remove_alternatives  javadoczip  %{_javadocdir}/%{uniquejavadocdir -- %{?1}}.zip $post_state %{family_noarch}}
+  %{save_and_remove_alternatives  javadoczip_%{origin}  %{_javadocdir}/%{uniquejavadocdir -- %{?1}}.zip $post_state %{family_noarch}}
+  %{save_and_remove_alternatives  javadoczip_%{javaver}  %{_javadocdir}/%{uniquejavadocdir -- %{?1}}.zip $post_state %{family_noarch}}
+  %{save_and_remove_alternatives  javadoczip_%{javaver}_%{origin}  %{_javadocdir}/%{uniquejavadocdir -- %{?1}}.zip $post_state %{family_noarch}}
 exit 0
 }
 
@@ -1075,6 +1101,9 @@ exit 0
 %if %is_system_jdk
 %if %{is_release_build -- %{?1}}
 %ghost %{_javadocdir}/java
+%ghost %{_javadocdir}/java-%{origin}
+%ghost %{_javadocdir}/java-%{javaver}
+%ghost %{_javadocdir}/java-%{javaver}-%{origin}
 %endif
 %endif
 }
@@ -1085,6 +1114,9 @@ exit 0
 %if %is_system_jdk
 %if %{is_release_build -- %{?1}}
 %ghost %{_javadocdir}/java-zip
+%ghost %{_javadocdir}/java-%{origin}.zip
+%ghost %{_javadocdir}/java-%{javaver}.zip
+%ghost %{_javadocdir}/java-%{javaver}-%{origin}.zip
 %endif
 %endif
 }
@@ -2587,6 +2619,9 @@ cjc.mainProgram(args)
 %endif
 
 %changelog
+* Tue Jul 12 2022 FeRD (Frank Dana) <ferdnyc@gmail.com> - 1:18.0.1.1.2-2.rolling
+- Add javaver- and origin-specific javadoc and javadoczip alternatives.
+
 * Mon Jul 11 2022 Andrew Hughes <gnu.andrew@redhat.com> - 1:18.0.1.1.2-1.rolling
 - Update to jdk-18.0.1.1 interim release
 - Update release notes to actually reflect OpenJDK 18 and subsequent releases 18.0.1 & 18.0.1.1
