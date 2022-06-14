@@ -347,7 +347,7 @@
 %global top_level_dir_name   %{origin}
 %global top_level_dir_name_backup %{top_level_dir_name}-backup
 %global buildver        10
-%global rpmrelease      3
+%global rpmrelease      4
 # Priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 # Using 10 digits may overflow the int used for priority, so we combine the patch and build versions
@@ -947,7 +947,7 @@ exit 0
 %ifarch %{sa_arches}
 %ifnarch %{zero_arches}
 %{_jvmdir}/%{sdkdir -- %{?1}}/bin/jhsdb
-%{_mandir}/man1/jhsdb-%{uniquesuffix -- %{?1}}.1.gz
+%{_mandir}/man1/jhsdb-%{uniquesuffix -- %{?1}}.1*
 %endif
 %endif
 %{_jvmdir}/%{sdkdir -- %{?1}}/bin/jinfo
@@ -986,13 +986,12 @@ exit 0
 %{_mandir}/man1/jstack-%{uniquesuffix -- %{?1}}.1*
 %{_mandir}/man1/jstat-%{uniquesuffix -- %{?1}}.1*
 %{_mandir}/man1/jstatd-%{uniquesuffix -- %{?1}}.1*
-%{_mandir}/man1/jwebserver-%{uniquesuffix -- %{?1}}.1*
 %{_mandir}/man1/serialver-%{uniquesuffix -- %{?1}}.1*
-%{_mandir}/man1/jdeprscan-%{uniquesuffix -- %{?1}}.1.gz
-%{_mandir}/man1/jlink-%{uniquesuffix -- %{?1}}.1.gz
-%{_mandir}/man1/jmod-%{uniquesuffix -- %{?1}}.1.gz
-%{_mandir}/man1/jshell-%{uniquesuffix -- %{?1}}.1.gz
-%{_mandir}/man1/jfr-%{uniquesuffix -- %{?1}}.1.gz
+%{_mandir}/man1/jdeprscan-%{uniquesuffix -- %{?1}}.1*
+%{_mandir}/man1/jlink-%{uniquesuffix -- %{?1}}.1*
+%{_mandir}/man1/jmod-%{uniquesuffix -- %{?1}}.1*
+%{_mandir}/man1/jshell-%{uniquesuffix -- %{?1}}.1*
+%{_mandir}/man1/jfr-%{uniquesuffix -- %{?1}}.1*
 %{_mandir}/man1/jwebserver-%{uniquesuffix -- %{?1}}.1*
 
 %if %{with_systemtap}
@@ -2556,6 +2555,9 @@ cjc.mainProgram(args)
 %endif
 
 %changelog
+* Thu Jun 30 2022 Stephan Bergmann <sbergman@redhat.com> - 1:18.0.1.0.10-4.rolling
+- Fix flatpak builds (catering for their uncompressed manual pages)
+
 * Fri Jun 24 2022 Andrew Hughes <gnu.andrew@redhat.com> - 1:18.0.1.0.10-3.rolling
 - Update FIPS support to bring in latest changes
 - * RH2023467: Enable FIPS keys export
