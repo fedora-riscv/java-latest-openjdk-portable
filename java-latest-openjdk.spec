@@ -315,7 +315,7 @@
 # buildjdkver is usually same as %%{featurever},
 # but in time of bootstrap of next jdk, it is featurever-1,
 # and this it is better to change it here, on single place
-%global buildjdkver 18
+%global buildjdkver %{featurever}
 # We don't add any LTS designator for STS packages (Fedora and EPEL).
 # We need to explicitly exclude EPEL as it would have the %%{rhel} macro defined.
 %if 0%{?rhel} && !0%{?epel}
@@ -339,7 +339,7 @@
 # Define IcedTea version used for SystemTap tapsets and desktop file
 %global icedteaver      6.0.0pre00-c848b93a8598
 # Define current Git revision for the FIPS support patches
-%global fipsver 39968997e2e
+%global fipsver 60131cc7271
 
 # Standard JPackage naming and versioning defines
 %global origin          openjdk
@@ -347,7 +347,7 @@
 %global top_level_dir_name   %{origin}
 %global top_level_dir_name_backup %{top_level_dir_name}-backup
 %global buildver        10
-%global rpmrelease      2
+%global rpmrelease      3
 # Priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 # Using 10 digits may overflow the int used for priority, so we combine the patch and build versions
@@ -365,6 +365,9 @@
 
 # Strip up to 6 trailing zeros in newjavaver, as the JDK does, to get the correct version used in filenames
 %global filever %(svn=%{newjavaver}; for i in 1 2 3 4 5 6 ; do svn=${svn%%.0} ; done; echo ${svn})
+
+# The tag used to create the OpenJDK tarball
+%global vcstag jdk-%{filever}+%{buildver}%{?tagsuffix:-%{tagsuffix}}
 
 # Define milestone (EA for pre-releases, GA for releases)
 # Release will be (where N is usually a number starting at 1):
@@ -1271,9 +1274,8 @@ License:  ASL 1.1 and ASL 2.0 and BSD and BSD with advertising and GPL+ and GPLv
 URL:      http://openjdk.java.net/
 
 
-# to regenerate source0 (jdk) run update_package.sh
-# update_package.sh contains hard-coded repos, revisions, tags, and projects to regenerate the source archives
-Source0: openjdk-jdk%{featurever}u-jdk-%{filever}+%{buildver}%{?tagsuffix:-%{tagsuffix}}.tar.xz
+# The source tarball, generated using generate_source_tarball.sh
+Source0: openjdk-jdk%{featurever}u-%{vcstag}.tar.xz
 
 # Use 'icedtea_sync.sh' to update the following
 # They are based on code contained in the IcedTea project (6.x).
@@ -1321,12 +1323,13 @@ Patch1:    rh1648242-accessible_toolkit_crash_do_not_break_jvm.patch
 # Restrict access to java-atk-wrapper classes
 Patch2:    rh1648644-java_access_bridge_privileged_security.patch
 Patch3:    rh649512-remove_uses_of_far_in_jpeg_libjpeg_turbo_1_4_compat_for_jdk10_and_up.patch
-# Depend on pcsc-lite-libs instead of pcs-lite-devel as this is only in optional repo
+# Depend on pcsc-lite-libs instead of pcsc-lite-devel as this is only in optional repo
 Patch6: rh1684077-openjdk_should_depend_on_pcsc-lite-libs_instead_of_pcsc-lite-devel.patch
 
 # Crypto policy and FIPS support patches
-# Patch is generated from the fips-18u tree at https://github.com/gnu-andrew/jdk/commits/fips-18u
-# as follows: git diff jdk-18+<update> > fips-18u-$(git show -s --format=%h HEAD).patch
+# Patch is generated from the fips-18u tree at https://github.com/rh-openjdk/jdk/tree/fips-18u
+# as follows: git diff %%{vcstag} src make > fips-18u-$(git show -s --format=%h HEAD).patch
+# Diff is limited to src and make subdirectories to exclude .github changes
 # Fixes currently included:
 # PR3183, RH1340845: Follow system wide crypto policy
 # PR3695: Allow use of system crypto policy to be disabled by the user
@@ -1342,6 +1345,10 @@ Patch6: rh1684077-openjdk_should_depend_on_pcsc-lite-libs_instead_of_pcsc-lite-d
 # RH2052819: Fix FIPS reliance on crypto policies
 # RH2052829: Detect NSS at Runtime for FIPS detection
 # RH2052070: Enable AlgorithmParameters and AlgorithmParameterGenerator services in FIPS mode
+# RH2023467: Enable FIPS keys export
+# RH2094027: SunEC runtime permission for FIPS
+# RH2036462: sun.security.pkcs11.wrapper.PKCS11.getInstance breakage
+# RH2090378: Revert to disabling system security properties and FIPS mode support together
 Patch1001: fips-18u-%{fipsver}.patch
 
 #############################################
@@ -2056,6 +2063,12 @@ top_dir_abs_staticlibs_build_path=$(pwd)/%{buildoutputdir -- ${suffix}%{staticli
 
 export JAVA_HOME=${top_dir_abs_main_build_path}/images/%{jdkimage}
 
+# Pre-test setup
+
+# Turn on system security properties
+sed -i -e "s:^security.useSystemPropertiesFile=.*:security.useSystemPropertiesFile=true:" \
+    ${JAVA_HOME}/conf/security/java.security
+
 #check Shenandoah is enabled
 %if %{use_shenandoah_hotspot}
 $JAVA_HOME//bin/java -XX:+UnlockExperimentalVMOptions -XX:+UseShenandoahGC -version
@@ -2069,9 +2082,14 @@ $JAVA_HOME/bin/java --add-opens java.base/javax.crypto=ALL-UNNAMED TestCryptoLev
 $JAVA_HOME/bin/javac -d . %{SOURCE14}
 $JAVA_HOME/bin/java $(echo $(basename %{SOURCE14})|sed "s|\.java||")
 
-# Check system crypto (policy) can be disabled
+# Check system crypto (policy) is active and can be disabled
+# Test takes a single argument - true or false - to state whether system
+# security properties are enabled or not.
 $JAVA_HOME/bin/javac -d . %{SOURCE15}
-$JAVA_HOME/bin/java -Djava.security.disableSystemPropertiesFile=true $(echo $(basename %{SOURCE15})|sed "s|\.java||")
+export PROG=$(echo $(basename %{SOURCE15})|sed "s|\.java||")
+export SEC_DEBUG="-Djava.security.debug=properties"
+$JAVA_HOME/bin/java ${SEC_DEBUG} ${PROG} true
+$JAVA_HOME/bin/java ${SEC_DEBUG} -Djava.security.disableSystemPropertiesFile=true ${PROG} false
 
 # Check java launcher has no SSB mitigation
 if ! nm $JAVA_HOME/bin/java | grep set_speculation ; then true ; else false; fi
@@ -2538,6 +2556,18 @@ cjc.mainProgram(args)
 %endif
 
 %changelog
+* Fri Jun 24 2022 Andrew Hughes <gnu.andrew@redhat.com> - 1:18.0.1.0.10-3.rolling
+- Update FIPS support to bring in latest changes
+- * RH2023467: Enable FIPS keys export
+- * RH2094027: SunEC runtime permission for FIPS
+- * RH2036462: sun.security.pkcs11.wrapper.PKCS11.getInstance breakage
+- * RH2090378: Revert to disabling system security properties and FIPS mode support together
+- Rebase RH1648249 nss.cfg patch so it applies after the FIPS patch
+- Enable system security properties in the RPM (now disabled by default in the FIPS repo)
+- Improve security properties test to check both enabled and disabled behaviour
+- Run security properties test with property debugging on
+- Minor sync-ups with java-17-openjdk spec file
+
 * Wed May 25 2022 Andrew Hughes <gnu.andrew@redhat.com> - 1:18.0.1.0.10-2.rolling
 - Exclude s390x from the gdb test on RHEL 7 where we see failures with the portable build
 
