@@ -347,7 +347,7 @@
 %global top_level_dir_name   %{origin}
 %global top_level_dir_name_backup %{top_level_dir_name}-backup
 %global buildver        10
-%global rpmrelease      4
+%global rpmrelease      5
 # Priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 # Using 10 digits may overflow the int used for priority, so we combine the patch and build versions
@@ -2555,6 +2555,9 @@ cjc.mainProgram(args)
 %endif
 
 %changelog
+* Thu Jun 30 2022 Francisco Ferrari Bihurriet <fferrari@redhat.com> - 1:18.0.1.0.10-5.rolling
+- RH2007331: SecretKey generate/import operations don't add the CKA_SIGN attribute in FIPS mode
+
 * Thu Jun 30 2022 Stephan Bergmann <sbergman@redhat.com> - 1:18.0.1.0.10-4.rolling
 - Fix flatpak builds (catering for their uncompressed manual pages)
 
