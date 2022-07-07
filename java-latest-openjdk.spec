@@ -2148,68 +2148,6 @@ for suffix in %{build_loop} ; do
 # build cycles
 done # end of release / debug cycle loop
 
-%check
-
-# We test debug first as it will give better diagnostics on a crash
-for suffix in %{build_loop} ; do
-
-export JAVA_HOME=${RPM_BUILD_ROOT}%{_jvmdir}/%{sdkdir -- $suffix}
-
-#check Shenandoah is enabled
-%if %{use_shenandoah_hotspot}
-$JAVA_HOME/bin/java -XX:+UnlockExperimentalVMOptions -XX:+UseShenandoahGC -version
-%endif
-
-# Check unlimited policy has been used
-$JAVA_HOME/bin/javac -d . %{SOURCE13}
-$JAVA_HOME/bin/java --add-opens java.base/javax.crypto=ALL-UNNAMED TestCryptoLevel
-
-# Check ECC is working
-$JAVA_HOME/bin/javac -d . %{SOURCE14}
-$JAVA_HOME/bin/java $(echo $(basename %{SOURCE14})|sed "s|\.java||")
-
-# Check system crypto (policy) is active and can be disabled
-# Test takes a single argument - true or false - to state whether system
-# security properties are enabled or not.
-$JAVA_HOME/bin/javac -d . %{SOURCE15}
-export PROG=$(echo $(basename %{SOURCE15})|sed "s|\.java||")
-export SEC_DEBUG="-Djava.security.debug=properties"
-$JAVA_HOME/bin/java ${SEC_DEBUG} ${PROG} true
-$JAVA_HOME/bin/java ${SEC_DEBUG} -Djava.security.disableSystemPropertiesFile=true ${PROG} false
-
-# Check java launcher has no SSB mitigation
-if ! nm $JAVA_HOME/bin/java | grep set_speculation ; then true ; else false; fi
-
-# Check alt-java launcher has SSB mitigation on supported architectures
-%ifarch %{ssbd_arches}
-nm $JAVA_HOME/bin/%{alt_java_name} | grep set_speculation
-%else
-if ! nm $JAVA_HOME/bin/%{alt_java_name} | grep set_speculation ; then true ; else false; fi
-%endif
-
-%if %{include_staticlibs}
-# Check debug symbols in static libraries (smoke test)
-export STATIC_LIBS_HOME=${JAVA_HOME}/%{static_libs_install_dir}
-readelf --debug-dump $STATIC_LIBS_HOME/libfdlibm.a | grep w_remainder.c
-readelf --debug-dump $STATIC_LIBS_HOME/libfdlibm.a | grep e_remainder.c
-%endif
-
-# Check src.zip has all sources. See RHBZ#1130490
-$JAVA_HOME/bin/jar -tf $JAVA_HOME/lib/src.zip | grep 'sun.misc.Unsafe'
-
-# Check class files include useful debugging information
-$JAVA_HOME/bin/javap -l java.lang.Object | grep "Compiled from"
-$JAVA_HOME/bin/javap -l java.lang.Object | grep LineNumberTable
-$JAVA_HOME/bin/javap -l java.lang.Object | grep LocalVariableTable
-
-# Check generated class files include useful debugging information
-$JAVA_HOME/bin/javap -l java.nio.ByteBuffer | grep "Compiled from"
-$JAVA_HOME/bin/javap -l java.nio.ByteBuffer | grep LineNumberTable
-$JAVA_HOME/bin/javap -l java.nio.ByteBuffer | grep LocalVariableTable
-
-# build cycles check
-done
-
 %install
 STRIP_KEEP_SYMTAB=libjvm*
 
@@ -2324,6 +2262,70 @@ find $RPM_BUILD_ROOT/%{_jvmdir}/%{sdkdir -- $suffix}/ -type d -exec chmod 755 {}
 find $RPM_BUILD_ROOT/%{_jvmdir}/%{sdkdir -- $suffix}/legal -type f -exec chmod 644 {} \; ; 
 
 # end, dual install
+done
+
+%check
+
+# We test debug first as it will give better diagnostics on a crash
+for suffix in %{build_loop} ; do
+
+# Tests in the check stage are performed on the installed image
+# rpmbuild operates as follows: build -> install -> test
+export JAVA_HOME=${RPM_BUILD_ROOT}%{_jvmdir}/%{sdkdir -- $suffix}
+
+#check Shenandoah is enabled
+%if %{use_shenandoah_hotspot}
+$JAVA_HOME/bin/java -XX:+UnlockExperimentalVMOptions -XX:+UseShenandoahGC -version
+%endif
+
+# Check unlimited policy has been used
+$JAVA_HOME/bin/javac -d . %{SOURCE13}
+$JAVA_HOME/bin/java --add-opens java.base/javax.crypto=ALL-UNNAMED TestCryptoLevel
+
+# Check ECC is working
+$JAVA_HOME/bin/javac -d . %{SOURCE14}
+$JAVA_HOME/bin/java $(echo $(basename %{SOURCE14})|sed "s|\.java||")
+
+# Check system crypto (policy) is active and can be disabled
+# Test takes a single argument - true or false - to state whether system
+# security properties are enabled or not.
+$JAVA_HOME/bin/javac -d . %{SOURCE15}
+export PROG=$(echo $(basename %{SOURCE15})|sed "s|\.java||")
+export SEC_DEBUG="-Djava.security.debug=properties"
+$JAVA_HOME/bin/java ${SEC_DEBUG} ${PROG} true
+$JAVA_HOME/bin/java ${SEC_DEBUG} -Djava.security.disableSystemPropertiesFile=true ${PROG} false
+
+# Check java launcher has no SSB mitigation
+if ! nm $JAVA_HOME/bin/java | grep set_speculation ; then true ; else false; fi
+
+# Check alt-java launcher has SSB mitigation on supported architectures
+%ifarch %{ssbd_arches}
+nm $JAVA_HOME/bin/%{alt_java_name} | grep set_speculation
+%else
+if ! nm $JAVA_HOME/bin/%{alt_java_name} | grep set_speculation ; then true ; else false; fi
+%endif
+
+%if %{include_staticlibs}
+# Check debug symbols in static libraries (smoke test)
+export STATIC_LIBS_HOME=${JAVA_HOME}/%{static_libs_install_dir}
+readelf --debug-dump $STATIC_LIBS_HOME/libfdlibm.a | grep w_remainder.c
+readelf --debug-dump $STATIC_LIBS_HOME/libfdlibm.a | grep e_remainder.c
+%endif
+
+# Check src.zip has all sources. See RHBZ#1130490
+$JAVA_HOME/bin/jar -tf $JAVA_HOME/lib/src.zip | grep 'sun.misc.Unsafe'
+
+# Check class files include useful debugging information
+$JAVA_HOME/bin/javap -l java.lang.Object | grep "Compiled from"
+$JAVA_HOME/bin/javap -l java.lang.Object | grep LineNumberTable
+$JAVA_HOME/bin/javap -l java.lang.Object | grep LocalVariableTable
+
+# Check generated class files include useful debugging information
+$JAVA_HOME/bin/javap -l java.nio.ByteBuffer | grep "Compiled from"
+$JAVA_HOME/bin/javap -l java.nio.ByteBuffer | grep LineNumberTable
+$JAVA_HOME/bin/javap -l java.nio.ByteBuffer | grep LocalVariableTable
+
+# build cycles check
 done
 
 %if %{include_normal_build}
@@ -2570,6 +2572,9 @@ cjc.mainProgram(args)
 %endif
 
 %changelog
+* Fri Jul 08 2022 Andrew Hughes <gnu.andrew@redhat.com> - 1:18.0.1.0.10-7.rolling
+- Sequence spec file sections as they are run by rpmbuild (build, install then test)
+
 * Fri Jul 08 2022 Andrew Hughes <gnu.andrew@redhat.com> - 1:18.0.1.0.10-7.rolling
 - Turn on system security properties as part of the build's install section
 - Move cacerts replacement to install section and retain original of this and tzdb.dat
