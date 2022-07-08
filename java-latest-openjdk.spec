@@ -563,7 +563,7 @@ alternatives \\
   --slave %{_mandir}/man1/keytool.1$ext keytool.1$ext \\
   %{_mandir}/man1/keytool-%{uniquesuffix -- %{?1}}.1$ext \\
   --slave %{_mandir}/man1/rmiregistry.1$ext rmiregistry.1$ext \\
-  %{_mandir}/man1/rmiregistry-%{uniquesuffix -- %{?1}}.1$ext 
+  %{_mandir}/man1/rmiregistry-%{uniquesuffix -- %{?1}}.1$ext
 
 %{set_if_needed_alternatives $key %{family}}
 
@@ -1962,41 +1962,41 @@ function installjdk() {
     local imagepath=${1}
 
     if [ -d ${imagepath} ] ; then
-	# the build (erroneously) removes read permissions from some jars
-	# this is a regression in OpenJDK 7 (our compiler):
-	# http://icedtea.classpath.org/bugzilla/show_bug.cgi?id=1437
-	find ${imagepath} -iname '*.jar' -exec chmod ugo+r {} \;
+        # the build (erroneously) removes read permissions from some jars
+        # this is a regression in OpenJDK 7 (our compiler):
+        # http://icedtea.classpath.org/bugzilla/show_bug.cgi?id=1437
+        find ${imagepath} -iname '*.jar' -exec chmod ugo+r {} \;
 
-	# Build screws up permissions on binaries
-	# https://bugs.openjdk.java.net/browse/JDK-8173610
-	find ${imagepath} -iname '*.so' -exec chmod +x {} \;
-	find ${imagepath}/bin/ -exec chmod +x {} \;
+        # Build screws up permissions on binaries
+        # https://bugs.openjdk.java.net/browse/JDK-8173610
+        find ${imagepath} -iname '*.so' -exec chmod +x {} \;
+        find ${imagepath}/bin/ -exec chmod +x {} \;
 
-	# Install nss.cfg right away as we will be using the JRE above
-	install -m 644 nss.cfg ${imagepath}/conf/security/
+        # Install nss.cfg right away as we will be using the JRE above
+        install -m 644 nss.cfg ${imagepath}/conf/security/
 
-	# Install nss.fips.cfg: NSS configuration for global FIPS mode (crypto-policies)
-	install -m 644 nss.fips.cfg ${imagepath}/conf/security/
+        # Install nss.fips.cfg: NSS configuration for global FIPS mode (crypto-policies)
+        install -m 644 nss.fips.cfg ${imagepath}/conf/security/
 
-	# Turn on system security properties
-	sed -i -e "s:^security.useSystemPropertiesFile=.*:security.useSystemPropertiesFile=true:" \
-	    ${imagepath}/conf/security/java.security
+        # Turn on system security properties
+        sed -i -e "s:^security.useSystemPropertiesFile=.*:security.useSystemPropertiesFile=true:" \
+            ${imagepath}/conf/security/java.security
 
-	# Use system-wide tzdata
-	mv ${imagepath}/lib/tzdb.dat{,.upstream}
-	ln -sv %{_datadir}/javazi-1.8/tzdb.dat ${imagepath}/lib/tzdb.dat
+        # Use system-wide tzdata
+        mv ${imagepath}/lib/tzdb.dat{,.upstream}
+        ln -sv %{_datadir}/javazi-1.8/tzdb.dat ${imagepath}/lib/tzdb.dat
 
-	# Rename OpenJDK cacerts database
-	mv ${imagepath}/lib/security/cacerts{,.upstream}
-	# Install cacerts symlink needed by some apps which hard-code the path
-	ln -sv /etc/pki/java/cacerts ${imagepath}/lib/security
+        # Rename OpenJDK cacerts database
+        mv ${imagepath}/lib/security/cacerts{,.upstream}
+        # Install cacerts symlink needed by some apps which hard-code the path
+        ln -sv /etc/pki/java/cacerts ${imagepath}/lib/security
 
-	# Create fake alt-java as a placeholder for future alt-java
-	pushd ${imagepath}
-	# add alt-java man page
-	echo "Hardened java binary recommended for launching untrusted code from the Web e.g. javaws" > man/man1/%{alt_java_name}.1
-	cat man/man1/java.1 >> man/man1/%{alt_java_name}.1
-	popd
+        # Create fake alt-java as a placeholder for future alt-java
+        pushd ${imagepath}
+        # add alt-java man page
+        echo "Hardened java binary recommended for launching untrusted code from the Web e.g. javaws" > man/man1/%{alt_java_name}.1
+        cat man/man1/java.1 >> man/man1/%{alt_java_name}.1
+        popd
     fi
 }
 
@@ -2007,58 +2007,58 @@ function debugcheckjdk() {
 
     if [ -d ${imagepath} ] ; then
 
-	so_suffix="so"
-	# Check debug symbols are present and can identify code
-	find "${imagepath}" -iname "*.$so_suffix" -print0 | while read -d $'\0' lib
-	do
-	    if [ -f "$lib" ] ; then
-		echo "Testing $lib for debug symbols"
-		# All these tests rely on RPM failing the build if the exit code of any set
-		# of piped commands is non-zero.
+        so_suffix="so"
+        # Check debug symbols are present and can identify code
+        find "${imagepath}" -iname "*.$so_suffix" -print0 | while read -d $'\0' lib
+        do
+            if [ -f "$lib" ] ; then
+                echo "Testing $lib for debug symbols"
+                # All these tests rely on RPM failing the build if the exit code of any set
+                # of piped commands is non-zero.
 
-		# Test for .debug_* sections in the shared object. This is the main test
-		# Stripped objects will not contain these
-		eu-readelf -S "$lib" | grep "] .debug_"
-		test $(eu-readelf -S "$lib" | grep -E "\]\ .debug_(info|abbrev)" | wc --lines) == 2
+                # Test for .debug_* sections in the shared object. This is the main test
+                # Stripped objects will not contain these
+                eu-readelf -S "$lib" | grep "] .debug_"
+                test $(eu-readelf -S "$lib" | grep -E "\]\ .debug_(info|abbrev)" | wc --lines) == 2
 
-		# Test FILE symbols. These will most likely be removed by anything that
-		# manipulates symbol tables because it's generally useless. So a nice test
-		# that nothing has messed with symbols
-		old_IFS="$IFS"
-		IFS=$'\n'
-		for line in $(eu-readelf -s "$lib" | grep "00000000      0 FILE    LOCAL  DEFAULT")
-		do
-		    # We expect to see .cpp files, except for architectures like aarch64 and
-		    # s390 where we expect .o and .oS files
-		    echo "$line" | grep -E "ABS ((.*/)?[-_a-zA-Z0-9]+\.(c|cc|cpp|cxx|o|oS))?$"
-		done
-		IFS="$old_IFS"
+                # Test FILE symbols. These will most likely be removed by anything that
+                # manipulates symbol tables because it's generally useless. So a nice test
+                # that nothing has messed with symbols
+                old_IFS="$IFS"
+                IFS=$'\n'
+                for line in $(eu-readelf -s "$lib" | grep "00000000      0 FILE    LOCAL  DEFAULT")
+                do
+                    # We expect to see .cpp files, except for architectures like aarch64 and
+                    # s390 where we expect .o and .oS files
+                    echo "$line" | grep -E "ABS ((.*/)?[-_a-zA-Z0-9]+\.(c|cc|cpp|cxx|o|oS))?$"
+                done
+                IFS="$old_IFS"
 
-		# If this is the JVM, look for javaCalls.(cpp|o) in FILEs, for extra sanity checking
-		if [ "`basename $lib`" = "libjvm.so" ]; then
-		    eu-readelf -s "$lib" | \
-			grep -E "00000000      0 FILE    LOCAL  DEFAULT      ABS javaCalls.(cpp|o)$"
-		fi
+                # If this is the JVM, look for javaCalls.(cpp|o) in FILEs, for extra sanity checking
+                if [ "`basename $lib`" = "libjvm.so" ]; then
+                    eu-readelf -s "$lib" | \
+                        grep -E "00000000      0 FILE    LOCAL  DEFAULT      ABS javaCalls.(cpp|o)$"
+                fi
 
-		# Test that there are no .gnu_debuglink sections pointing to another
-		# debuginfo file. There shouldn't be any debuginfo files, so the link makes
-		# no sense either
-		eu-readelf -S "$lib" | grep 'gnu'
-		if eu-readelf -S "$lib" | grep "\] .gnu_debuglink" | grep PROGBITS; then
-		   echo "bad .gnu_debuglink section."
-		   eu-readelf -x .gnu_debuglink "$lib"
-		   false
-		fi
-	    fi
-	done
+                # Test that there are no .gnu_debuglink sections pointing to another
+                # debuginfo file. There shouldn't be any debuginfo files, so the link makes
+                # no sense either
+                eu-readelf -S "$lib" | grep 'gnu'
+                if eu-readelf -S "$lib" | grep "\] .gnu_debuglink" | grep PROGBITS; then
+                   echo "bad .gnu_debuglink section."
+                   eu-readelf -x .gnu_debuglink "$lib"
+                   false
+                fi
+            fi
+        done
 
-	# Make sure gdb can do a backtrace based on line numbers on libjvm.so
-	# javaCalls.cpp:58 should map to:
-	# http://hg.openjdk.java.net/jdk8u/jdk8u/hotspot/file/ff3b27e6bcc2/src/share/vm/runtime/javaCalls.cpp#l58
-	# Using line number 1 might cause build problems. See:
-	# https://bugzilla.redhat.com/show_bug.cgi?id=1539664
-	# https://bugzilla.redhat.com/show_bug.cgi?id=1538767
-	gdb -q "${imagepath}/bin/java" <<EOF | tee gdb.out
+        # Make sure gdb can do a backtrace based on line numbers on libjvm.so
+        # javaCalls.cpp:58 should map to:
+        # http://hg.openjdk.java.net/jdk8u/jdk8u/hotspot/file/ff3b27e6bcc2/src/share/vm/runtime/javaCalls.cpp#l58
+        # Using line number 1 might cause build problems. See:
+        # https://bugzilla.redhat.com/show_bug.cgi?id=1539664
+        # https://bugzilla.redhat.com/show_bug.cgi?id=1538767
+        gdb -q "${imagepath}/bin/java" <<EOF | tee gdb.out
 handle SIGSEGV pass nostop noprint
 handle SIGILL pass nostop noprint
 set breakpoint pending on
@@ -2070,7 +2070,7 @@ end
 run -version
 EOF
 %ifarch %{gdb_arches}
-	grep 'JavaCallWrapper::JavaCallWrapper' gdb.out
+        grep 'JavaCallWrapper::JavaCallWrapper' gdb.out
 %endif
 
     fi
@@ -2257,9 +2257,9 @@ popd
 # end moving files to /etc
 
 # stabilize permissions
-find $RPM_BUILD_ROOT/%{_jvmdir}/%{sdkdir -- $suffix}/ -name "*.so" -exec chmod 755 {} \; ; 
-find $RPM_BUILD_ROOT/%{_jvmdir}/%{sdkdir -- $suffix}/ -type d -exec chmod 755 {} \; ; 
-find $RPM_BUILD_ROOT/%{_jvmdir}/%{sdkdir -- $suffix}/legal -type f -exec chmod 644 {} \; ; 
+find $RPM_BUILD_ROOT/%{_jvmdir}/%{sdkdir -- $suffix}/ -name "*.so" -exec chmod 755 {} \; ;
+find $RPM_BUILD_ROOT/%{_jvmdir}/%{sdkdir -- $suffix}/ -type d -exec chmod 755 {} \; ;
+find $RPM_BUILD_ROOT/%{_jvmdir}/%{sdkdir -- $suffix}/legal -type f -exec chmod 644 {} \; ;
 
 # end, dual install
 done
@@ -2343,7 +2343,7 @@ local posix = require "posix"
 if (os.getenv("debug") == "true") then
   debug = true;
   print("cjc: in spec debug is on")
-else 
+else
   debug = false;
 end
 
@@ -2572,6 +2572,9 @@ cjc.mainProgram(args)
 %endif
 
 %changelog
+* Fri Jul 08 2022 Andrew Hughes <gnu.andrew@redhat.com> - 1:18.0.1.0.10-7.rolling
+- Fix whitespace in spec file
+
 * Fri Jul 08 2022 Andrew Hughes <gnu.andrew@redhat.com> - 1:18.0.1.0.10-7.rolling
 - Sequence spec file sections as they are run by rpmbuild (build, install then test)
 
@@ -2826,7 +2829,7 @@ cjc.mainProgram(args)
 
 * Sun Apr 25 2021 Petra Alice Mikova <pmikova@redhat.com> - 1:16.0.1.0.9-1.rolling
 - update to 16.0.1+9 april cpu tag
-- dropped jdk8259949-allow_cf-protection_on_x86.patch 
+- dropped jdk8259949-allow_cf-protection_on_x86.patch
 
 * Thu Mar 11 2021 Andrew Hughes <gnu.andrew@redhat.com> - 1:16.0.0.0.36-2.rolling
 - Perform static library build on a separate source tree with bundled image libraries
@@ -2874,7 +2877,7 @@ cjc.mainProgram(args)
 
 * Sat Dec 19 2020 Jiri Vanek <jvanek@redhat.com> - 1:15.0.1.9-6.rolling
 - many cosmetic changes taken from more maintained jdk11
-- introduced debug_arches, bootstrap_arches, systemtap_arches, fastdebug_arches, sa_arches, share_arches, shenandoah_arches, zgc_arches 
+- introduced debug_arches, bootstrap_arches, systemtap_arches, fastdebug_arches, sa_arches, share_arches, shenandoah_arches, zgc_arches
   instead of various hardcoded ifarches
 - updated systemtap
 - added requires excludes for debug pkgs
@@ -2957,7 +2960,7 @@ cjc.mainProgram(args)
 * Tue Mar 24 2020 Petra Alice Mikova <pmikova@redhat.com> - 1:14.0.0.36-3.rolling
 - Remove s390x workaround flags for GCC 10
 - bump buildjdkver to 14
-- uploaded new src tarball 
+- uploaded new src tarball
 
 * Mon Mar 23 2020 Petra Alice Mikova <pmikova@redhat.com> - 1:14.0.0.36-2.rolling
 - removed a whitespace causing fail of postinstall script
@@ -2977,7 +2980,7 @@ cjc.mainProgram(args)
 - fix issues with build with GCC10: JDK-8224851, -fcommon switch
 
 * Thu Feb 27 2020 Petra Alice Mikova pmikova@redhat.com> - 1:13.0.2.8-3.rolling
-- Add JDK-8224851 patch to resolve aarch64 issues 
+- Add JDK-8224851 patch to resolve aarch64 issues
 
 * Tue Feb 04 2020 Petra Alice Mikova <pmikova@redhat.com> - 1:13.0.2.8-2.rolling
 - fix Release, as it was broken by last rpmdev-bumpspec
@@ -3298,7 +3301,7 @@ cjc.mainProgram(args)
 - Removed unneeded patches:
   PStack-808293.patch
   multiple-pkcs11-library-init.patch
-  ppc_stack_overflow_fix.patch 
+  ppc_stack_overflow_fix.patch
 - Added patches for s390 Zero builds:
   JDK-8201495-s390-java-opts.patch
   JDK-8201509-s390-atomic_store.patch
