@@ -340,6 +340,26 @@
 %global build_hotspot_first 0
 %endif
 
+# Define vendor information used by OpenJDK
+%global oj_vendor Red Hat, Inc.
+%global oj_vendor_url https://www.redhat.com/
+# Define what url should JVM offer in case of a crash report
+# order may be important, epel may have rhel declared
+%if 0%{?epel}
+%global oj_vendor_bug_url  https://bugzilla.redhat.com/enter_bug.cgi?product=Fedora%20EPEL&component=%{name}&version=epel%{epel}
+%else
+%if 0%{?fedora}
+# Does not work for rawhide, keeps the version field empty
+%global oj_vendor_bug_url  https://bugzilla.redhat.com/enter_bug.cgi?product=Fedora&component=%{name}&version=%{fedora}
+%else
+%if 0%{?rhel}
+%global oj_vendor_bug_url  https://bugzilla.redhat.com/enter_bug.cgi?product=Red%20Hat%20Enterprise%20Linux%20%{rhel}&component=%{name}
+%else
+%global oj_vendor_bug_url  https://bugzilla.redhat.com/enter_bug.cgi
+%endif
+%endif
+%endif
+
 # Define IcedTea version used for SystemTap tapsets and desktop file
 %global icedteaver      6.0.0pre00-c848b93a8598
 # Define current Git revision for the FIPS support patches
@@ -351,7 +371,7 @@
 %global top_level_dir_name   %{origin}
 %global top_level_dir_name_backup %{top_level_dir_name}-backup
 %global buildver        10
-%global rpmrelease      7
+%global rpmrelease      8
 # Priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 # Using 10 digits may overflow the int used for priority, so we combine the patch and build versions
@@ -390,23 +410,6 @@
 %global ea_designator_zip -%{expected_ea_designator}
 %global extraver .%{expected_ea_designator}
 %global eaprefix 0.
-%endif
-
-# Define what url should JVM offer in case of a crash report
-# order may be important, epel may have rhel declared
-%if 0%{?epel}
-%global bugs  https://bugzilla.redhat.com/enter_bug.cgi?product=Fedora%20EPEL&component=%{name}&version=epel%{epel}
-%else
-%if 0%{?fedora}
-# Does not work for rawhide, keeps the version field empty
-%global bugs  https://bugzilla.redhat.com/enter_bug.cgi?product=Fedora&component=%{name}&version=%{fedora}
-%else
-%if 0%{?rhel}
-%global bugs  https://bugzilla.redhat.com/enter_bug.cgi?product=Red%20Hat%20Enterprise%20Linux%20%{rhel}&component=%{name}
-%else
-%global bugs  https://bugzilla.redhat.com/enter_bug.cgi
-%endif
-%endif
 %endif
 
 # parametrized macros are order-sensitive
@@ -1312,6 +1315,9 @@ Source14: TestECDSA.java
 # Verify system crypto (policy) can be disabled via a property
 Source15: TestSecurityProperties.java
 
+# Ensure vendor settings are correct
+Source16: CheckVendor.java
+
 # nss fips configuration file
 Source17: nss.fips.cfg.in
 
@@ -1920,10 +1926,10 @@ function buildjdk() {
     --with-version-pre="${EA_DESIGNATOR}" \
     --with-version-opt=%{lts_designator} \
     --with-vendor-version-string="%{vendor_version_string}" \
-    --with-vendor-name="Red Hat, Inc." \
-    --with-vendor-url="https://www.redhat.com/" \
-    --with-vendor-bug-url="%{bugs}" \
-    --with-vendor-vm-bug-url="%{bugs}" \
+    --with-vendor-name="%{oj_vendor}" \
+    --with-vendor-url="%{oj_vendor_url}" \
+    --with-vendor-bug-url="%{oj_vendor_bug_url}" \
+    --with-vendor-vm-bug-url="%{oj_vendor_bug_url}" \
     --with-boot-jdk=${buildjdk} \
     --with-debug-level=${debuglevel} \
     --with-native-debug-symbols="%{debug_symbols}" \
@@ -2305,6 +2311,10 @@ nm $JAVA_HOME/bin/%{alt_java_name} | grep set_speculation
 if ! nm $JAVA_HOME/bin/%{alt_java_name} | grep set_speculation ; then true ; else false; fi
 %endif
 
+# Check correct vendor values have been set
+$JAVA_HOME/bin/javac -d . %{SOURCE16}
+$JAVA_HOME/bin/java $(echo $(basename %{SOURCE16})|sed "s|\.java||") "%{oj_vendor}" "%{oj_vendor_url}" "%{oj_vendor_bug_url}"
+
 %if %{include_staticlibs}
 # Check debug symbols in static libraries (smoke test)
 export STATIC_LIBS_HOME=${JAVA_HOME}/%{static_libs_install_dir}
@@ -2572,6 +2582,13 @@ cjc.mainProgram(args)
 %endif
 
 %changelog
+* Sat Jul 09 2022 Jayashree Huttanagoudar <jhuttana@redhat.com> - 1:18.0.1.0.10-8.rolling
+- Fix issue where CheckVendor.java test erroneously passes when it should fail.
+- Add proper quoting so '&' is not treated as a special character by the shell.
+
+* Sat Jul 09 2022 Andrew Hughes <gnu.andrew@redhat.com> - 1:18.0.1.0.10-8.rolling
+- Include a test in the RPM to check the build has the correct vendor information.
+
 * Fri Jul 08 2022 Andrew Hughes <gnu.andrew@redhat.com> - 1:18.0.1.0.10-7.rolling
 - Fix whitespace in spec file
 
