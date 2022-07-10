@@ -312,10 +312,6 @@
 %global interimver 0
 %global updatever 1
 %global patchver 1
-# If you bump featurever, you must also bump vendor_version_string
-# Used via new version scheme. JDK 17 was
-# GA'ed in March 2022 => 22.3
-%global vendor_version_string 22.3
 # buildjdkver is usually same as %%{featurever},
 # but in time of bootstrap of next jdk, it is featurever-1,
 # and this it is better to change it here, on single place
@@ -359,6 +355,7 @@
 %endif
 %endif
 %endif
+%global oj_vendor_version (Red_Hat-%{version}-%{release})
 
 # Define IcedTea version used for SystemTap tapsets and desktop file
 %global icedteaver      6.0.0pre00-c848b93a8598
@@ -371,7 +368,7 @@
 %global top_level_dir_name   %{origin}
 %global top_level_dir_name_backup %{top_level_dir_name}-backup
 %global buildver        2
-%global rpmrelease      2
+%global rpmrelease      3
 # Priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 # Using 10 digits may overflow the int used for priority, so we combine the patch and build versions
@@ -1762,6 +1759,8 @@ The %{origin_nice} %{featurever} API documentation compressed in a single archiv
 
 %prep
 
+echo "Preparing %{oj_vendor_version}"
+
 # Using the echo macro breaks rpmdev-bumpspec, as it parses the first line of stdout :-(
 %if 0%{?stapinstall:1}
   echo "CPU: %{_target_cpu}, arch install directory: %{archinstall}, SystemTap install directory: %{stapinstall}"
@@ -1959,7 +1958,7 @@ function buildjdk() {
     --with-version-build=%{buildver} \
     --with-version-pre="${EA_DESIGNATOR}" \
     --with-version-opt=%{lts_designator} \
-    --with-vendor-version-string="%{vendor_version_string}" \
+    --with-vendor-version-string="%{oj_vendor_version}" \
     --with-vendor-name="%{oj_vendor}" \
     --with-vendor-url="%{oj_vendor_url}" \
     --with-vendor-bug-url="%{oj_vendor_bug_url}" \
@@ -2350,7 +2349,7 @@ if ! nm $JAVA_HOME/bin/%{alt_java_name} | grep set_speculation ; then true ; els
 
 # Check correct vendor values have been set
 $JAVA_HOME/bin/javac -d . %{SOURCE16}
-$JAVA_HOME/bin/java $(echo $(basename %{SOURCE16})|sed "s|\.java||") "%{oj_vendor}" "%{oj_vendor_url}" "%{oj_vendor_bug_url}"
+$JAVA_HOME/bin/java $(echo $(basename %{SOURCE16})|sed "s|\.java||") "%{oj_vendor}" "%{oj_vendor_url}" "%{oj_vendor_bug_url}" "%{oj_vendor_version}"
 
 %if %{include_staticlibs}
 # Check debug symbols in static libraries (smoke test)
@@ -2619,6 +2618,9 @@ cjc.mainProgram(args)
 %endif
 
 %changelog
+* Wed Jul 13 2022 Andrew Hughes <gnu.andrew@redhat.com> - 1:18.0.1.1.2-3.rolling
+- Make use of the vendor version string to store our version & release rather than an upstream release date
+
 * Tue Jul 12 2022 FeRD (Frank Dana) <ferdnyc@gmail.com> - 1:18.0.1.1.2-2.rolling
 - Add javaver- and origin-specific javadoc and javadoczip alternatives.
 
