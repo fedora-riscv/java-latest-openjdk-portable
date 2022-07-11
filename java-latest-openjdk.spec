@@ -311,7 +311,7 @@
 %global featurever 18
 %global interimver 0
 %global updatever 1
-%global patchver 0
+%global patchver 1
 # If you bump featurever, you must also bump vendor_version_string
 # Used via new version scheme. JDK 17 was
 # GA'ed in March 2022 => 22.3
@@ -370,8 +370,8 @@
 %global origin_nice     OpenJDK
 %global top_level_dir_name   %{origin}
 %global top_level_dir_name_backup %{top_level_dir_name}-backup
-%global buildver        10
-%global rpmrelease      8
+%global buildver        2
+%global rpmrelease      1
 # Priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 # Using 10 digits may overflow the int used for priority, so we combine the patch and build versions
@@ -1125,7 +1125,8 @@ Requires: ca-certificates
 # Require javapackages-filesystem for ownership of /usr/lib/jvm/ and macros
 Requires: javapackages-filesystem
 # Require zone-info data provided by tzdata-java sub-package
-Requires: tzdata-java >= 2015d
+# 2022a required as of JDK-8283350 in 18.0.1.1
+Requires: tzdata-java >= 2022a
 # for support of kernel stream control
 # libsctp.so.1 is being `dlopen`ed on demand
 Requires: lksctp-tools%{?_isa}
@@ -1410,7 +1411,8 @@ BuildRequires: java-latest-openjdk-devel
 %ifarch %{zero_arches}
 BuildRequires: libffi-devel
 %endif
-BuildRequires: tzdata-java >= 2015d
+# 2022a required as of JDK-8283350 in 18.0.1.1
+BuildRequires: tzdata-java >= 2022a
 # Earlier versions have a bug in tree vectorization on PPC
 BuildRequires: gcc >= 4.8.3-8
 
@@ -2151,6 +2153,9 @@ for suffix in %{build_loop} ; do
   # Check debug symbols were built into the dynamic libraries
   debugcheckjdk ${top_dir_abs_main_build_path}/images/%{jdkimage}
 
+  # Print release information
+  cat ${top_dir_abs_main_build_path}/images/%{jdkimage}/release
+
 # build cycles
 done # end of release / debug cycle loop
 
@@ -2582,6 +2587,14 @@ cjc.mainProgram(args)
 %endif
 
 %changelog
+* Mon Jul 11 2022 Andrew Hughes <gnu.andrew@redhat.com> - 1:18.0.1.1.2-1.rolling
+- Update to jdk-18.0.1.1 interim release
+- Update release notes to actually reflect OpenJDK 18 and subsequent releases 18.0.1 & 18.0.1.1
+- Print release file during build, which should now include a correct SOURCE value from .src-rev
+- Update tarball script with IcedTea GitHub URL and .src-rev generation
+- Include script to generate bug list for release notes
+- Update tzdata requirement to 2022a to match JDK-8283350
+
 * Sat Jul 09 2022 Jayashree Huttanagoudar <jhuttana@redhat.com> - 1:18.0.1.0.10-8.rolling
 - Fix issue where CheckVendor.java test erroneously passes when it should fail.
 - Add proper quoting so '&' is not treated as a special character by the shell.

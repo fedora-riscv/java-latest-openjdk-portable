@@ -37,6 +37,8 @@ set -e
 
 OPENJDK_URL_DEFAULT=https://github.com
 COMPRESSION_DEFAULT=xz
+# Corresponding IcedTea version
+ICEDTEA_VERSION=13.0
 
 if [ "x$1" = "xhelp" ] ; then
     echo -e "Behaviour may be specified by setting the following variables:\n"
@@ -126,11 +128,10 @@ pushd "${FILE_NAME_ROOT}"
 
             echo "Syncing EC list with NSS"
             if [ "x$PR3823" = "x" ] ; then
-                # originally for 8:
-                # get PR3823.patch (from http://icedtea.classpath.org/hg/icedtea16) from most correct tag
-                # Do not push it or publish it (see https://icedtea.classpath.org/bugzilla/show_bug.cgi?id=3823)
+                # get PR3823.patch (from https://github.com/icedtea-git/icedtea) in the ${ICEDTEA_VERSION} branch
+                # Do not push it or publish it
 		echo "PR3823 not found. Downloading..."
-		wget https://icedtea.wildebeest.org/hg/icedtea16/raw-file/tip/patches/pr3823.patch
+		wget -v https://github.com/icedtea-git/icedtea/raw/${ICEDTEA_VERSION}/patches/pr3823.patch
 	        echo "Applying ${PWD}/pr3823.patch"
 		patch -Np1 < pr3823.patch
 		rm pr3823.patch
@@ -142,6 +143,14 @@ pushd "${FILE_NAME_ROOT}"
         popd
     fi
 
+    # Generate .src-rev so build has knowledge of the revision the tarball was created from
+    mkdir build
+    pushd build
+    sh ${PWD}/../openjdk/configure
+    make store-source-revision
+    popd
+    rm -rf build
+
     echo "Compressing remaining forest"
     if [ "X$COMPRESSION" = "Xxz" ] ; then
         SWITCH=cJf
@@ -152,5 +161,3 @@ pushd "${FILE_NAME_ROOT}"
     mv ${FILE_NAME_ROOT}.tar.${COMPRESSION}  ..
 popd
 echo "Done. You may want to remove the uncompressed version - $FILE_NAME_ROOT."
-
-
