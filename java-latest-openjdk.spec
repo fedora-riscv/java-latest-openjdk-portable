@@ -368,7 +368,7 @@
 %global top_level_dir_name   %{origin}
 %global top_level_dir_name_backup %{top_level_dir_name}-backup
 %global buildver        2
-%global rpmrelease      3
+%global rpmrelease      4
 # Priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 # Using 10 digits may overflow the int used for priority, so we combine the patch and build versions
@@ -2203,6 +2203,21 @@ jdk_image=${top_dir_abs_main_build_path}/images/%{jdkimage}
 
 # Install the jdk
 mkdir -p $RPM_BUILD_ROOT%{_jvmdir}
+
+pushd ${jdk_image}
+%ifarch %{ix86}
+  for file in $(find $(pwd) | grep -e "/bin/" -e "\.so$") ; do
+    echo "deprecating $file"
+    echo '#!/bin/bash' > $file
+    echo 'echo "We are going to remove i686 jdk. Please fix your package accordingly!"' >> $file
+    echo 'echo "See https://fedoraproject.org/wiki/Changes/Drop_i686_JDKs"' >> $file
+    echo 'echo "See https://pagure.io/fesco/issue/2772"' >> $file
+    echo 'echo "See https://bugzilla.redhat.com/show_bug.cgi?id=2083750"' >> $file
+    echo 'exit 1' >> $file
+  done
+%endif
+popd
+
 cp -a ${jdk_image} $RPM_BUILD_ROOT%{_jvmdir}/%{sdkdir -- $suffix}
 
 pushd ${jdk_image}
@@ -2307,7 +2322,9 @@ find $RPM_BUILD_ROOT/%{_jvmdir}/%{sdkdir -- $suffix}/legal -type f -exec chmod 6
 done
 
 %check
-
+%ifarch %{ix86}
+  exit 0
+%endif
 # We test debug first as it will give better diagnostics on a crash
 for suffix in %{build_loop} ; do
 
@@ -2618,6 +2635,10 @@ cjc.mainProgram(args)
 %endif
 
 %changelog
+* Wed Jul 13 2022 Jiri Vanek <jvanek@redhat.com> - 1:18.0.1.0.10-4.rolling.
+- Replaced binaries and .so files with bash-stubs on i686 in preparation of the removal on that architecture:
+- https://fedoraproject.org/wiki/Changes/Drop_i686_JDKs
+
 * Wed Jul 13 2022 Andrew Hughes <gnu.andrew@redhat.com> - 1:18.0.1.1.2-3.rolling
 - Make use of the vendor version string to store our version & release rather than an upstream release date
 
