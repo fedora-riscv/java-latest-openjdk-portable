@@ -368,7 +368,7 @@
 %global top_level_dir_name   %{origin}
 %global top_level_dir_name_backup %{top_level_dir_name}-backup
 %global buildver        2
-%global rpmrelease      5
+%global rpmrelease      6
 # Priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 # Using 10 digits may overflow the int used for priority, so we combine the patch and build versions
@@ -484,6 +484,9 @@
 %global tapsetdirttapset %{tapsetroot}/tapset/
 %global tapsetdir %{tapsetdirttapset}/%{stapinstall}
 %endif
+
+# x86 is no longer supported
+ExcludeArch: %{ix86}
 
 # not-duplicated scriptlets for normal/debug packages
 %global update_desktop_icons /usr/bin/gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
@@ -2639,7 +2642,10 @@ cjc.mainProgram(args)
 %endif
 
 %changelog
-* Sat Jul 09 2022 Andrew Hughes <gnu.andrew@redhat.com> - 1:18.0.1.1.2-5.rolling
+* Sun Jul 17 2022 Andrew Hughes <gnu.andrew@redhat.com> - 1:18.0.1.1.2-6.rolling
+- Exclude x86 from builds as the bootstrap JDK is now completely broken and unusable
+
+* Wed Jul 13 2022 Andrew Hughes <gnu.andrew@redhat.com> - 1:18.0.1.1.2-5.rolling
 - Explicitly require crypto-policies during build and runtime for system security properties
 
 * Wed Jul 13 2022 Jiri Vanek <jvanek@redhat.com> - 1:18.0.1.1.2-4.rolling.
