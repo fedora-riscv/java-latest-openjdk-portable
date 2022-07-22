@@ -310,8 +310,8 @@
 # New Version-String scheme-style defines
 %global featurever 18
 %global interimver 0
-%global updatever 1
-%global patchver 1
+%global updatever 2
+%global patchver 0
 # buildjdkver is usually same as %%{featurever},
 # but in time of bootstrap of next jdk, it is featurever-1,
 # and this it is better to change it here, on single place
@@ -367,8 +367,8 @@
 %global origin_nice     OpenJDK
 %global top_level_dir_name   %{origin}
 %global top_level_dir_name_backup %{top_level_dir_name}-backup
-%global buildver        2
-%global rpmrelease      8
+%global buildver        9
+%global rpmrelease      1
 # Priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 # Using 10 digits may overflow the int used for priority, so we combine the patch and build versions
@@ -486,7 +486,11 @@
 %endif
 
 # x86 is no longer supported
+%if 0%{?java_arches:1}
 ExclusiveArch:  %{java_arches}
+%else
+ExcludeArch: %{ix86}
+%endif
 
 # not-duplicated scriptlets for normal/debug packages
 %global update_desktop_icons /usr/bin/gtk-update-icon-cache %{_datadir}/icons/hicolor &>/dev/null || :
@@ -1406,8 +1410,6 @@ Patch1001: fips-18u-%{fipsver}.patch
 # OpenJDK patches in need of upstreaming
 #
 #############################################
-# JDK-8282004: x86_32.ad rules that call SharedRuntime helpers should have CALL effects
-Patch7: jdk8282004-x86_32-missing_call_effects.patch
 
 BuildRequires: autoconf
 BuildRequires: automake
@@ -1821,7 +1823,6 @@ pushd %{top_level_dir_name}
 %patch2 -p1
 %patch3 -p1
 %patch6 -p1
-%patch7 -p1
 # Add crypto policy and FIPS support
 %patch1001 -p1
 # alt-java
@@ -2625,6 +2626,12 @@ cjc.mainProgram(args)
 %endif
 
 %changelog
+* Fri Jul 22 2022 Andrew Hughes <gnu.andrew@redhat.com> - 1:18.0.2.0.9-1.rolling
+- Update to jdk-18.0.2 release
+- Update release notes to 18.0.2
+- Drop JDK-8282004 patch which is now upstreamed under JDK-8282231
+- Exclude x86 where java_arches is undefined, in order to unbreak build
+
 * Fri Jul 22 2022 Jiri Vanek <gnu.andrew@redhat.com> - 1:18.0.1.1.2-8.rolling
 - moved to build only on %%{java_arches}
 -- https://fedoraproject.org/wiki/Changes/Drop_i686_JDKs
@@ -2635,7 +2642,7 @@ cjc.mainProgram(args)
 -- Replaced binaries and .so files with bash-stubs on i686
 - added ExclusiveArch:  %%{java_arches}
 -- this now excludes i686
--- this is safely backport-able to older fedoras, as the macro was  backported proeprly (with i686 included)
+-- this is safely backport-able to older fedoras, as the macro was backported properly (with i686 included)
 - https://bugzilla.redhat.com/show_bug.cgi?id=2104125
 
 * Thu Jul 21 2022 Fedora Release Engineering <releng@fedoraproject.org> - 1:18.0.1.1.2-7.rolling.1
