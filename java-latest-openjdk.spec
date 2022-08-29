@@ -308,14 +308,14 @@
 %endif
 
 # New Version-String scheme-style defines
-%global featurever 18
+%global featurever 19
 %global interimver 0
-%global updatever 2
+%global updatever 0
 %global patchver 0
 # buildjdkver is usually same as %%{featurever},
 # but in time of bootstrap of next jdk, it is featurever-1,
 # and this it is better to change it here, on single place
-%global buildjdkver %{featurever}
+%global buildjdkver 18
 # We don't add any LTS designator for STS packages (Fedora and EPEL).
 # We need to explicitly exclude EPEL as it would have the %%{rhel} macro defined.
 %if 0%{?rhel} && !0%{?epel}
@@ -360,14 +360,14 @@
 # Define IcedTea version used for SystemTap tapsets and desktop file
 %global icedteaver      6.0.0pre00-c848b93a8598
 # Define current Git revision for the FIPS support patches
-%global fipsver 60131cc7271
+%global fipsver d95bb40c7c8
 
 # Standard JPackage naming and versioning defines
 %global origin          openjdk
 %global origin_nice     OpenJDK
 %global top_level_dir_name   %{origin}
 %global top_level_dir_name_backup %{top_level_dir_name}-backup
-%global buildver        9
+%global buildver        36
 %global rpmrelease      1
 # Priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
@@ -1084,7 +1084,6 @@ exit 0
 %define files_demo() %{expand:
 %license %{_jvmdir}/%{sdkdir -- %{?1}}/legal
 %{_jvmdir}/%{sdkdir -- %{?1}}/demo
-%{_jvmdir}/%{sdkdir -- %{?1}}/sample
 }
 
 %define files_src() %{expand:
@@ -1360,6 +1359,9 @@ Source16: CheckVendor.java
 # nss fips configuration file
 Source17: nss.fips.cfg.in
 
+# Ensure translations are available for new timezones
+Source18: TestTranslations.java
+
 ############################################
 #
 # RPM/distribution specific patches
@@ -1379,10 +1381,12 @@ Patch2:    rh1648644-java_access_bridge_privileged_security.patch
 Patch3:    rh649512-remove_uses_of_far_in_jpeg_libjpeg_turbo_1_4_compat_for_jdk10_and_up.patch
 # Depend on pcsc-lite-libs instead of pcsc-lite-devel as this is only in optional repo
 Patch6: rh1684077-openjdk_should_depend_on_pcsc-lite-libs_instead_of_pcsc-lite-devel.patch
+# Add translations for Europe/Kyiv locally until upstream is fully updated for tzdata2022b
+Patch7: jdk8292223-tzdata2022b-kyiv.patch
 
 # Crypto policy and FIPS support patches
-# Patch is generated from the fips-18u tree at https://github.com/rh-openjdk/jdk/tree/fips-18u
-# as follows: git diff %%{vcstag} src make > fips-18u-$(git show -s --format=%h HEAD).patch
+# Patch is generated from the fips-19u tree at https://github.com/rh-openjdk/jdk/tree/fips-19u
+# as follows: git diff %%{vcstag} src make > fips-19u-$(git show -s --format=%h HEAD).patch
 # Diff is limited to src and make subdirectories to exclude .github changes
 # Fixes currently included:
 # PR3183, RH1340845: Follow system wide crypto policy
@@ -1403,7 +1407,7 @@ Patch6: rh1684077-openjdk_should_depend_on_pcsc-lite-libs_instead_of_pcsc-lite-d
 # RH2094027: SunEC runtime permission for FIPS
 # RH2036462: sun.security.pkcs11.wrapper.PKCS11.getInstance breakage
 # RH2090378: Revert to disabling system security properties and FIPS mode support together
-Patch1001: fips-18u-%{fipsver}.patch
+Patch1001: fips-19u-%{fipsver}.patch
 
 #############################################
 #
@@ -1823,6 +1827,7 @@ pushd %{top_level_dir_name}
 %patch2 -p1
 %patch3 -p1
 %patch6 -p1
+%patch7 -p1
 # Add crypto policy and FIPS support
 %patch1001 -p1
 # alt-java
@@ -2075,9 +2080,9 @@ function debugcheckjdk() {
                 IFS=$'\n'
                 for line in $(eu-readelf -s "$lib" | grep "00000000      0 FILE    LOCAL  DEFAULT")
                 do
-                    # We expect to see .cpp files, except for architectures like aarch64 and
+                    # We expect to see .cpp and .S files, except for architectures like aarch64 and
                     # s390 where we expect .o and .oS files
-                    echo "$line" | grep -E "ABS ((.*/)?[-_a-zA-Z0-9]+\.(c|cc|cpp|cxx|o|oS))?$"
+                    echo "$line" | grep -E "ABS ((.*/)?[-_a-zA-Z0-9]+\.(c|cc|cpp|cxx|o|S|oS))?$"
                 done
                 IFS="$old_IFS"
 
@@ -2289,10 +2294,6 @@ done
 # See https://bugzilla.redhat.com/show_bug.cgi?id=741821
 mkdir -p $RPM_BUILD_ROOT%{_sysconfdir}/.java/.systemPrefs
 
-# copy samples next to demos; samples are mostly js files
-cp -r %{top_level_dir_name}/src/sample  $RPM_BUILD_ROOT/%{_jvmdir}/%{sdkdir -- $suffix}/
-
-
 # moving config files to /etc
 mkdir -p $RPM_BUILD_ROOT/%{etcjavadir -- $suffix}
 mkdir -p $RPM_BUILD_ROOT/%{etcjavadir -- $suffix}/lib
@@ -2358,6 +2359,14 @@ if ! nm $JAVA_HOME/bin/%{alt_java_name} | grep set_speculation ; then true ; els
 # Check correct vendor values have been set
 $JAVA_HOME/bin/javac -d . %{SOURCE16}
 $JAVA_HOME/bin/java $(echo $(basename %{SOURCE16})|sed "s|\.java||") "%{oj_vendor}" "%{oj_vendor_url}" "%{oj_vendor_bug_url}" "%{oj_vendor_version}"
+
+# Check translations are available for new timezones
+$JAVA_HOME/bin/javac --add-exports java.base/sun.util.resources=ALL-UNNAMED \
+                     --add-exports java.base/sun.util.locale.provider=ALL-UNNAMED \
+                     -d . %{SOURCE18}
+$JAVA_HOME/bin/java --add-exports java.base/sun.util.resources=ALL-UNNAMED \
+                    --add-exports java.base/sun.util.locale.provider=ALL-UNNAMED \
+                    $(echo $(basename %{SOURCE18})|sed "s|\.java||") "Europe/Kiev" "Europe/Kyiv"
 
 %if %{include_staticlibs}
 # Check debug symbols in static libraries (smoke test)
@@ -2626,6 +2635,15 @@ cjc.mainProgram(args)
 %endif
 
 %changelog
+* Mon Aug 29 2022 Andrew Hughes <gnu.andrew@redhat.com> - 1:19.0.0.0.36-1.rolling
+- Update to RC version of OpenJDK 19
+- Update release notes to 19.0.0
+- Rebase FIPS patches from fips-19u branch
+- Need to include the '.S' suffix in debuginfo checks after JDK-8284661
+- Add patch to provide translations for Europe/Kyiv added in tzdata2022b
+- Add test to ensure timezones can be translated
+- Remove references to sample directory removed by JDK-8284999
+
 * Fri Jul 22 2022 Andrew Hughes <gnu.andrew@redhat.com> - 1:18.0.2.0.9-1.rolling
 - Update to jdk-18.0.2 release
 - Update release notes to 18.0.2
