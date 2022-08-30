@@ -327,7 +327,7 @@
 # buildjdkver is usually same as %%{featurever},
 # but in time of bootstrap of next jdk, it is featurever-1,
 # and this it is better to change it here, on single place
-%global buildjdkver 18
+%global buildjdkver %{featurever}
 # We don't add any LTS designator for STS packages (Fedora and EPEL).
 # We need to explicitly exclude EPEL as it would have the %%{rhel} macro defined.
 %if 0%{?rhel} && !0%{?epel}
@@ -2681,6 +2681,9 @@ cjc.mainProgram(args)
 %endif
 
 %changelog
+* Tue Aug 30 2022 Andrew Hughes <gnu.andrew@redhat.com> - 1:19.0.0.0.36-2.rolling
+- Switch buildjdkver back to being featurever, now java-19-openjdk is available in the buildroot
+
 * Mon Aug 29 2022 Andrew Hughes <gnu.andrew@redhat.com> - 1:19.0.0.0.36-2.rolling
 - Switch to static builds, reducing system dependencies and making build more portable
 
