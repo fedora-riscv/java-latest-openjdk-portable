@@ -834,7 +834,7 @@ The %{origin_nice} %{featurever} runtime environment - portable edition.
 
 %if %{include_normal_build}
 %package devel
-Summary: %{origin_nice} %{featurever} Development Environment portable edition.
+Summary: %{origin_nice} %{featurever} Development Environment portable edition
 %if (0%{?rhel} > 0 && 0%{?rhel} <= 8) || (0%{?fedora} >= 0 && 0%{?fedora} < 30)
 Group:   Development/Languages
 %endif
