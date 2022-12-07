@@ -313,8 +313,9 @@
 %global stapinstall %{nil}
 %endif
 
+# always off for portable builds
 %ifarch %{systemtap_arches}
-%global with_systemtap 1
+%global with_systemtap 0
 %else
 %global with_systemtap 0
 %endif
@@ -409,15 +410,15 @@
 %global is_ga           1
 %if %{is_ga}
 %global build_type GA
-%global expected_ea_designator ""
+%global ea_designator ""
 %global ea_designator_zip ""
 %global extraver %{nil}
 %global eaprefix %{nil}
 %else
 %global build_type EA
-%global expected_ea_designator ea
-%global ea_designator_zip -%{expected_ea_designator}
-%global extraver .%{expected_ea_designator}
+%global ea_designator ea
+%global ea_designator_zip -%{ea_designator}
+%global extraver .%{ea_designator}
 %global eaprefix 0.
 %endif
 
@@ -479,9 +480,6 @@
 %else
 %global alternatives_requires %{_sbindir}/alternatives
 %endif
-
-%global family %{name}.%{_arch}
-%global family_noarch  %{name}
 
 %if %{with_systemtap}
 # Where to install systemtap tapset (links)
@@ -1298,7 +1296,11 @@ Provides: java-%{origin}-src%{?1} = %{epoch}:%{version}-%{release}
 # Prevent brp-java-repack-jars from being run
 %global __jar_repack 0
 
-Name:    java-latest-%{origin}
+# portables have grown out of its component, moving back to java-x-vendor
+# this expression, when declared as global, filled component with java-x-vendor portable
+%define component %(echo %{name} | sed "s;-portable;;g")
+
+Name:    java-latest-%{origin}-portable
 Version: %{newjavaver}.%{buildver}
 # This package needs `.rolling` as part of Release so as to not conflict on install with
 # java-X-openjdk. I.e. when latest rolling release is also an LTS release packaged as
@@ -1315,7 +1317,7 @@ Release: %{?eaprefix}%{rpmrelease}%{?extraver}.rolling%{?dist}
 # provides >= 1.6.0 must specify the epoch, "java >= 1:1.6.0".
 
 Epoch:   1
-Summary: %{origin_nice} %{featurever} Runtime Environment
+Summary: %{origin_nice} %{featurever} Runtime Environment portable edition
 # Groups are only used up to RHEL 8 and on Fedora versions prior to F30
 %if (0%{?rhel} > 0 && 0%{?rhel} <= 8) || (0%{?fedora} >= 0 && 0%{?fedora} < 30)
 Group:   Development/Languages
@@ -1345,10 +1347,12 @@ Source0: openjdk-jdk%{featurever}u-%{vcstag}.tar.xz
 # Use 'icedtea_sync.sh' to update the following
 # They are based on code contained in the IcedTea project (6.x).
 # Systemtap tapsets. Zipped up to keep it small.
-Source8: tapsets-icedtea-%{icedteaver}.tar.xz
+# Disabled in portables
+#Source8: tapsets-icedtea-%%{icedteaver}.tar.xz
 
 # Desktop files. Adapted from IcedTea
-Source9: jconsole.desktop.in
+# Disabled in portables
+#Source9: jconsole.desktop.in
 
 # Release notes
 Source10: NEWS
@@ -1357,7 +1361,8 @@ Source10: NEWS
 Source11: nss.cfg.in
 
 # Removed libraries that we link instead
-Source12: remove-intree-libraries.sh
+# Disabled in portables
+#Source12: remove-intree-libraries.sh
 
 # Ensure we aren't using the limited crypto policy
 Source13: TestCryptoLevel.java
@@ -1376,6 +1381,14 @@ Source17: nss.fips.cfg.in
 
 # Ensure translations are available for new timezones
 Source18: TestTranslations.java
+
+%if (0%{?rhel} > 0 && 0%{?rhel} < 8)
+# boot jdk for portable build root on
+Source1001: ojdk17-aarch64-17.35.tar.gz
+Source1002: ojdk17-ppc64le-17.35.tar.gz
+Source1003: ojdk17-x86_64-17.35.tar.gz
+Source1004: ojdk17-s390x-17.35.tar.gz
+%endif
 
 ############################################
 #
@@ -1449,8 +1462,21 @@ BuildRequires: desktop-file-utils
 # elfutils only are OK for build without AOT
 BuildRequires: elfutils-devel
 BuildRequires: fontconfig-devel
+BuildRequires: freetype-devel
+%if (0%{?rhel} > 0 && 0%{?rhel} < 8)
+BuildRequires: devtoolset-8-gcc
+BuildRequires: devtoolset-8-gcc-c++
+%else
+BuildRequires: gcc
+# gcc-c++ is already needed
+BuildRequires: java-%{buildjdkver}-openjdk-devel
+%endif
 BuildRequires: gcc-c++
 BuildRequires: gdb
+%if (0%{?rhel} > 0 && 0%{?rhel} < 8)
+# rhel7 only, portables only. Rhel8 have gtk3, rpms have runtime recommends of gtk
+BuildRequires: gtk2-devel
+%endif
 BuildRequires: libxslt
 BuildRequires: libX11-devel
 BuildRequires: libXi-devel
@@ -1462,18 +1488,30 @@ BuildRequires: libXtst-devel
 # Requirement for setting up nss.cfg and nss.fips.cfg
 BuildRequires: nss-devel
 # Requirement for system security property test
+%if (0%{?rhel} > 0 && 0%{?rhel} < 8)
 BuildRequires: crypto-policies
+%endif
 BuildRequires: pkgconfig
 BuildRequires: xorg-x11-proto-devel
 BuildRequires: zip
+# to pack portable tarballs
+BuildRequires: tar
+BuildRequires: unzip
+%if (0%{?rhel} > 0 && 0%{?rhel} < 8)
+# No javapackages-filesystem on el7,nor is needed for portables
+%else
 BuildRequires: javapackages-filesystem
 BuildRequires: java-latest-openjdk-devel
+%endif
 # Zero-assembler build requirement
 %ifarch %{zero_arches}
 BuildRequires: libffi-devel
 %endif
 # 2022e required as of JDK-8295173
 BuildRequires: tzdata-java >= 2022e
+
+# cacerts build requirement in portable mode
+BuildRequires: ca-certificates
 # Earlier versions have a bug in tree vectorization on PPC
 BuildRequires: gcc >= 4.8.3-8
 
@@ -1491,11 +1529,11 @@ BuildRequires: libjpeg-devel
 BuildRequires: libpng-devel
 %else
 # Version in src/java.desktop/share/native/libfreetype/include/freetype/freetype.h
-Provides: bundled(freetype) = 2.12.0
+Provides: bundled(freetype) = 2.12.1
 # Version in src/java.desktop/share/native/libsplashscreen/giflib/gif_lib.h
 Provides: bundled(giflib) = 5.2.1
 # Version in src/java.desktop/share/native/libharfbuzz/hb-version.h
-Provides: bundled(harfbuzz) = 2.8.0
+Provides: bundled(harfbuzz) = 4.4.1
 # Version in src/java.desktop/share/native/liblcms/lcms2.h
 Provides: bundled(lcms2) = 2.12.0
 # Version in src/java.desktop/share/native/libjavajpeg/jpeglib.h
@@ -1875,8 +1913,6 @@ pushd %{top_level_dir_name}
 %patch6 -p1
 # Add crypto policy and FIPS support
 %patch1001 -p1
-# alt-java
-%patch600 -p1
 # nss.cfg PKCS11 support; must come last as it also alters java.security
 %patch1000 -p1
 # tzdata updates targetted for 19.0.2
@@ -1884,6 +1920,28 @@ pushd %{top_level_dir_name}
 %patch2002 -p1
 %patch2003 -p1
 popd # openjdk
+
+%patch600
+
+# The OpenJDK version file includes the current
+# upstream version information. For some reason,
+# configure does not automatically use the
+# default pre-version supplied there (despite
+# what the file claims), so we pass it manually
+# to configure
+VERSION_FILE=$(pwd)/%{top_level_dir_name}/make/conf/version-numbers.conf
+if [ -f ${VERSION_FILE} ] ; then
+    UPSTREAM_EA_DESIGNATOR=$(grep '^DEFAULT_PROMOTED_VERSION_PRE' ${VERSION_FILE} | cut -d '=' -f 2)
+else
+    echo "Could not find OpenJDK version file.";
+    exit 16
+fi
+if [ "x${UPSTREAM_EA_DESIGNATOR}" != "x%{ea_designator}" ] ; then
+    echo "WARNING: Designator mismatch";
+    echo "Spec file is configured for a %{build_type} build with designator '%{ea_designator}'"
+    echo "Upstream version-pre setting is '${UPSTREAM_EA_DESIGNATOR}'";
+    exit 17
+fi
 
 # Extract systemtap tapsets
 %if %{with_systemtap}
@@ -2013,7 +2071,7 @@ function buildjdk() {
     echo "Using make targets: ${maketargets}"
     echo "Using debuglevel: ${debuglevel}"
     echo "Using link_opt: ${link_opt}"
-    echo "Building %{newjavaver}-%{buildver}, pre=${EA_DESIGNATOR}, opt=%{lts_designator}"
+    echo "Building %{newjavaver}-%{buildver}, pre=%{ea_designator}, opt=%{lts_designator}"
 
     mkdir -p ${outputdir}
     pushd ${outputdir}
@@ -2030,7 +2088,7 @@ function buildjdk() {
     --with-jobs=1 \
 %endif
     --with-version-build=%{buildver} \
-    --with-version-pre="${EA_DESIGNATOR}" \
+    --with-version-pre="%{ea_designator}" \
     --with-version-opt=%{lts_designator} \
     --with-vendor-version-string="%{oj_vendor_version}" \
     --with-vendor-name="%{oj_vendor}" \
@@ -2195,7 +2253,7 @@ EOF
   cp -LR --preserve=mode,timestamps %{bootjdk} newboot
   systemjdk=$(pwd)/newboot
   buildjdk build/newboot ${systemjdk} %{hotspot_target} "release" "bundled"
-  mv build/newboot/jdk/lib/%{vm_variant}/libjvm.so newboot/lib/%{vm_variant}
+  mv build/newboot/jdk/lib/server/libjvm.so newboot/lib/server
 %else
   systemjdk=%{bootjdk}
 %endif
@@ -2697,6 +2755,9 @@ cjc.mainProgram(args)
 %endif
 
 %changelog
+* Thu Dec 01 2022 Petra Alice Mikova <pmikova@redhat.com> - 1:19.0.1.0.10-2.rolling
+- make the build portable
+
 * Wed Oct 26 2022 Andrew Hughes <gnu.andrew@redhat.com> - 1:19.0.1.0.10-2.rolling
 - Update in-tree tzdata to 2022e with JDK-8294357 & JDK-8295173
 - Update CLDR data with Europe/Kyiv (JDK-8293834)
