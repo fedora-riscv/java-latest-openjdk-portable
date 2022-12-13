@@ -1,0 +1,167 @@
+Key:
+
+JDK-X  - https://bugs.openjdk.java.net/browse/JDK-X
+CVE-XXXX-YYYY: https://cve.mitre.org/cgi-bin/cvename.cgi?name=XXXX-YYYY
+
+New in release OpenJDK 19.0.1 (2022-10-18):
+===========================================
+Live versions of these release notes can be found at:
+  * https://builds.shipilev.net/backports-monitor/release-notes-19.0.1.html
+
+* Security fixes
+  - JDK-8282252: Improve BigInteger/Decimal validation
+  - JDK-8285662: Better permission resolution
+  - JDK-8286077, CVE-2022-21618: Wider MultiByte conversions
+  - JDK-8286511: Improve macro allocation
+  - JDK-8286519: Better memory handling
+  - JDK-8286526, CVE-2022-21619: Improve NTLM support
+  - JDK-8286910, CVE-2022-21624: Improve JNDI lookups
+  - JDK-8286918, CVE-2022-21628: Better HttpServer service
+  - JDK-8287446: Enhance icon presentations
+  - JDK-8288508: Enhance ECDSA usage
+  - JDK-8289366, CVE-2022-39399: Improve HTTP/2 client usage
+  - JDK-8289853: Update HarfBuzz to 4.4.1
+  - JDK-8290334: Update FreeType to 2.12.1
+* Other changes
+  - JDK-8028265: Add legacy tz tests to OpenJDK
+  - JDK-8212096: javax/net/ssl/ServerName/SSLEngineExplorerMatchedSNI.java failed intermittently due to SSLException: Tag mismatch
+  - JDK-8227651: Tests fail with SSLProtocolException: Input record too big
+  - JDK-8284977: MetricsTesterCgroupV2.getLongValueEntryFromFile fails when named value doesn't exist
+  - JDK-8287672: jtreg test com/sun/jndi/ldap/LdapPoolTimeoutTest.java fails intermittently in nightly run
+  - JDK-8287906: Rewrite of GitHub Actions (GHA) sanity tests
+  - JDK-8287917: System.loadLibrary does not work on Big Sur if JDK is built with macOS SDK 10.15 and earlier
+  - JDK-8288499: Restore cancel-in-progress in GHA
+  - JDK-8288599: com/sun/management/OperatingSystemMXBean/TestTotalSwap.java: Expected total swap size ... but getTotalSwapSpaceSize returned ...
+  - JDK-8288653: Bump version numbers for 19.0.1
+  - JDK-8290000: Bump macOS GitHub actions to macOS 11
+  - JDK-8290695: Change milestone to fcs for releases: jdk-11.0.17, jdk-17.0.5, jdk-19.0.1
+  - JDK-8291640: java/beans/XMLDecoder/8028054/Task.java should use the 3-arg Class.forName
+  - JDK-8291897: TerminatingThreadLocal(s) not registered from virtual thread(s)
+  - JDK-8292051: jdk/internal/misc/TerminatingThreadLocal/TestTerminatingThreadLocal.java failed "AssertionError: Expected terminated values: [666] but got: []"
+  - JDK-8292240: CarrierThread.blocking not reset when spare not activated
+  - JDK-8292487: Back out the fix for JDK-8281962 from jdk19u
+  - JDK-8292579: (tz) Update Timezone Data to 2022c
+  - JDK-8292654: G1 remembered set memory footprint regression after JDK-8286115
+  - JDK-8293180: JQuery UI license file not updated
+
+New in release OpenJDK 19.0.0 (2022-09-20):
+===========================================
+Major changes are listed below.  Some changes may have been backported
+to earlier releases following their first appearance in OpenJDK 19.
+
+The full list of changes in 19u can be found at:
+-  * https://builds.shipilev.net/backports-monitor/release-notes-19.txt
+
+NEW FEATURES
+============
+
+Language Features
+=================
+
+Pattern Matching for switch
+===========================
+https://openjdk.org/jeps/406
+https://openjdk.org/jeps/420
+https://openjdk.org/jeps/427
+
+Enhance the Java programming language with pattern matching for
+`switch` expressions and statements, along with extensions to the
+language of patterns. Extending pattern matching to `switch` allows an
+expression to be tested against a number of patterns, each with a
+specific action, so that complex data-oriented queries can be
+expressed concisely and safely.
+
+This was a preview feature (http://openjdk.java.net/jeps/12) in
+OpenJDK 17 (JEP 406) and saw a second preview in OpenJDK 18 (JEP 420).
+It reaches its third preview (JEP 427) in OpenJDK 19.
+
+Record Patterns
+===============
+https://openjdk.org/jeps/405
+
+Enhance the Java programming language with record patterns to
+deconstruct record values. Record patterns and type patterns can be
+nested to enable a powerful, declarative, and composable form of data
+navigation and processing.
+
+This is a preview feature (http://openjdk.java.net/jeps/12) introduced
+in OpenJDK 19 (JEP 405)
+
+Library Features
+================
+
+Vector API
+==========
+https://openjdk.org/jeps/338
+https://openjdk.org/jeps/414
+https://openjdk.org/jeps/417
+https://openjdk.org/jeps/426
+
+Introduce an API to express vector computations that reliably compile
+at runtime to optimal vector hardware instructions on supported CPU
+architectures and thus achieve superior performance to equivalent
+scalar computations.
+
+This is an incubation feature (https://openjdk.java.net/jeps/11)
+introduced in OpenJDK 16 (JEP 338). A second round of incubation took
+place in OpenJDK 17 (JEP 414), OpenJDK 18 (JEP 417) saw a third and
+OpenJDK 19 sees its fourth (JEP 426).
+
+Foreign Function & Memory API
+=============================
+https://openjdk.org/jeps/412
+https://openjdk.org/jeps/419
+https://openjdk.org/jeps/424
+
+Introduce an API by which Java programs can interoperate with code and
+data outside of the Java runtime. By efficiently invoking foreign
+functions (i.e., code outside the JVM), and by safely accessing
+foreign memory (i.e., memory not managed by the JVM), the API enables
+Java programs to call native libraries and process native data without
+the brittleness and danger of JNI.
+
+This API is now a preview feature (http://openjdk.java.net/jeps/12).
+It was first introduced in incubation
+(https://openjdk.java.net/jeps/11) in OpenJDK 17 (JEP 412), and is an
+evolution of the Foreign Memory Access API (OpenJDK 14 through 16) and
+Foreign Linker API (OpenJDK 16) (see release notes for
+java-17-openjdk). OpenJDK 18 saw a second round of incubation (JEP
+419) before its inclusion as a preview in OpenJDK 19 (JEP 424).
+
+Virtual Threads
+===============
+https://openjdk.org/jeps/425
+
+Introduce virtual threads to the Java Platform. Virtual threads are
+lightweight threads that dramatically reduce the effort of writing,
+maintaining, and observing high-throughput concurrent applications.
+
+This is a preview feature (http://openjdk.java.net/jeps/12) introduced
+in OpenJDK 19 (JEP 425)
+
+Structured Concurrency
+======================
+https://openjdk.org/jeps/428
+
+Simplify multithreaded programming by introducing an API for
+structured concurrency. Structured concurrency treats multiple tasks
+running in different threads as a single unit of work, thereby
+streamlining error handling and cancellation, improving reliability,
+and enhancing observability.
+
+This is an incubation feature (https://openjdk.java.net/jeps/11)
+introduced in OpenJDK 19 (JEP 428).
+
+Ports
+=====
+
+Linux/RISC-V Port
+=================
+https://openjdk.org/jeps/422
+
+RISC-V is a free and open-source RISC instruction set architecture
+(ISA) designed originally at the University of California, Berkeley,
+and now developed collaboratively under the sponsorship of RISC-V
+International. It is already supported by a wide range of language
+toolchains. With the increasing availability of RISC-V hardware, a
+port of the JDK would be valuable.
