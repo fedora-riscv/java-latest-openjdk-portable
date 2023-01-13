@@ -392,7 +392,7 @@
 %global top_level_dir_name   %{origin}
 %global top_level_dir_name_backup %{top_level_dir_name}-backup
 %global buildver        10
-%global rpmrelease      2
+%global rpmrelease      3
 # Priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 # Using 10 digits may overflow the int used for priority, so we combine the patch and build versions
@@ -1197,7 +1197,7 @@ function installjdk() {
         install -m 644 nss.fips.cfg ${imagepath}/conf/security/
 
         # Create fake alt-java as a placeholder for future alt-java
-		if [ -d man/man1 ] ; then
+        if [ -d man/man1 ] ; then
           pushd ${imagepath}
             # add alt-java man page
             echo "Hardened java binary recommended for launching untrusted code from the Web e.g. javaws" > man/man1/%{alt_java_name}.1
@@ -1594,6 +1594,18 @@ done
 %endif
 
 %changelog
+* Thu Jan 12 2023 Jiri Vanel <jvanek@redhat.com> - 1:19.0.1.0.10-3.rolling
+- keep system crypto policy honoring disabled (test adapted)
+- keep upstream cacerts
+- call  installjdk also for jreimage.
+- add alt-java man page conditionaly (se install openjdk for jre above)
+- convert man pages to utf8 (conditionally, man pages are not in jre)
+- stabilised permissions as was in rpms
+- use NEWS both in tarball and outside
+- for release sdk use javadoc archive.
+- remove STRIP_KEEP_SYMTAB=libjvm* and all todo as it is going to continue in rpms only
+  (hopefully)
+
 * Thu Dec 01 2022 Petra Alice Mikova <pmikova@redhat.com> - 1:19.0.1.0.10-2.rolling
 - initial import
 
