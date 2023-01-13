@@ -1479,14 +1479,14 @@ $JAVA_HOME/bin/java --add-opens java.base/javax.crypto=ALL-UNNAMED TestCryptoLev
 $JAVA_HOME/bin/javac -d . %{SOURCE14}
 $JAVA_HOME/bin/java $(echo $(basename %{SOURCE14})|sed "s|\.java||")
 
-# Check system crypto (policy) is deactive and can be enabled
+# Check system crypto (policy) is deactive and can not be enabled
 # Test takes a single argument - true or false - to state whether system
 # security properties are enabled or not.
 $JAVA_HOME/bin/javac -d . %{SOURCE15}
 export PROG=$(echo $(basename %{SOURCE15})|sed "s|\.java||")
 export SEC_DEBUG="-Djava.security.debug=properties"
 $JAVA_HOME/bin/java ${SEC_DEBUG} ${PROG} false
-$JAVA_HOME/bin/java ${SEC_DEBUG} -Djava.security.disableSystemPropertiesFile=false ${PROG} true || echo "do not work, https://pkgs.devel.redhat.com/cgit/rpms/java-11-openjdk/tree/java-11-openjdk.spec?h=openjdk-portable-rhel-7#n1292 have it wrong?"
+$JAVA_HOME/bin/java ${SEC_DEBUG} -Djava.security.disableSystemPropertiesFile=false ${PROG} false
 
 # Check java launcher has no SSB mitigation
 if ! nm $JAVA_HOME/bin/java | grep set_speculation ; then true ; else false; fi
