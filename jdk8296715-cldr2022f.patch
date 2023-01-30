@@ -1,0 +1,90 @@
+commit 55dd90222e2cef11ebca39a2998d8f799aadbb9a
+Author: Yoshiki Sato <ysatowse@openjdk.org>
+Date:   Tue Nov 15 00:51:21 2022 +0000
+
+    8296715: CLDR v42 update for tzdata 2022f
+    
+    Reviewed-by: naoto
+
+diff --git a/make/data/cldr/common/main/es_419.xml b/make/data/cldr/common/main/es_419.xml
+index eeef247d3d0..73f8b7f4edf 100644
+--- a/make/data/cldr/common/main/es_419.xml
++++ b/make/data/cldr/common/main/es_419.xml
+@@ -1019,11 +1019,8 @@ Warnings: All cp values have U+FE0F characters removed. See /annotationsDerived/
+ 		<decimalFormats numberSystem="latn">
+ 			<decimalFormatLength type="long">
+ 				<decimalFormat>
+-					<pattern type="1000000000000" count="one">0 billón</pattern>
+ 					<pattern type="1000000000000" count="other">0 billón</pattern>
+-					<pattern type="10000000000000" count="one">00 billones</pattern>
+ 					<pattern type="10000000000000" count="other">00 billones</pattern>
+-					<pattern type="100000000000000" count="one">000 billones</pattern>
+ 					<pattern type="100000000000000" count="other">000 billones</pattern>
+ 				</decimalFormat>
+ 			</decimalFormatLength>
+diff --git a/make/data/cldr/common/main/es_MX.xml b/make/data/cldr/common/main/es_MX.xml
+index 6632c099084..816996b30c3 100644
+--- a/make/data/cldr/common/main/es_MX.xml
++++ b/make/data/cldr/common/main/es_MX.xml
+@@ -707,11 +707,8 @@ CLDR data files are interpreted according to the LDML specification (http://unic
+ 		<decimalFormats numberSystem="latn">
+ 			<decimalFormatLength type="long">
+ 				<decimalFormat>
+-					<pattern type="1000000000000" count="one">0 billón</pattern>
+ 					<pattern type="1000000000000" count="other">0 billones</pattern>
+-					<pattern type="10000000000000" count="one">00 billones</pattern>
+ 					<pattern type="10000000000000" count="other">00 billones</pattern>
+-					<pattern type="100000000000000" count="one">000 billones</pattern>
+ 					<pattern type="100000000000000" count="other">000 billones</pattern>
+ 				</decimalFormat>
+ 			</decimalFormatLength>
+diff --git a/make/data/cldr/common/supplemental/metaZones.xml b/make/data/cldr/common/supplemental/metaZones.xml
+index a3c76520554..bfdadad6ba2 100644
+--- a/make/data/cldr/common/supplemental/metaZones.xml
++++ b/make/data/cldr/common/supplemental/metaZones.xml
+@@ -330,7 +330,8 @@ For terms of use, see http://www.unicode.org/copyright.html
+ 			</timezone>
+ 			<timezone type="America/Chihuahua">
+ 				<usesMetazone to="1998-04-05 09:00" mzone="America_Central"/>
+-				<usesMetazone from="1998-04-05 09:00" mzone="Mexico_Pacific"/>
++				<usesMetazone to="2022-10-30 08:00" from="1998-04-05 09:00" mzone="Mexico_Pacific"/>
++				<usesMetazone from="2022-10-30 08:00" mzone="America_Central"/>
+ 			</timezone>
+ 			<timezone type="America/Coral_Harbour">
+ 				<usesMetazone mzone="America_Eastern"/>
+@@ -613,7 +614,8 @@ For terms of use, see http://www.unicode.org/copyright.html
+ 			</timezone>
+ 			<timezone type="America/Ojinaga">
+ 				<usesMetazone to="1998-04-05 09:00" mzone="America_Central"/>
+-				<usesMetazone from="1998-04-05 09:00" mzone="America_Mountain"/>
++				<usesMetazone to="2022-10-30 08:00" from="1998-04-05 09:00" mzone="America_Mountain"/>
++				<usesMetazone from="2022-10-30 08:00" mzone="America_Central"/>
+ 			</timezone>
+ 			<timezone type="America/Panama">
+ 				<usesMetazone mzone="America_Eastern"/>
+diff --git a/test/jdk/sun/text/resources/LocaleData.cldr b/test/jdk/sun/text/resources/LocaleData.cldr
+index 1282c42288f..3783061d487 100644
+--- a/test/jdk/sun/text/resources/LocaleData.cldr
++++ b/test/jdk/sun/text/resources/LocaleData.cldr
+@@ -8394,3 +8394,7 @@ FormatData/de/latn.NumberElements/12=
+ FormatData/de_AT/latn.NumberElements/12=.
+ FormatData/fr/latn.NumberElements/11=
+ FormatData/fr_CH/latn.NumberElements/11=.
++
++# tzdata2022f
++TimeZoneNames/en/America\/Ojinaga/1=Central Standard Time
++TimeZoneNames/en/America\/Chihuahua/1=Central Standard Time
+diff --git a/test/jdk/sun/text/resources/LocaleDataTest.java b/test/jdk/sun/text/resources/LocaleDataTest.java
+index a959796e079..605fa74ca6c 100644
+--- a/test/jdk/sun/text/resources/LocaleDataTest.java
++++ b/test/jdk/sun/text/resources/LocaleDataTest.java
+@@ -40,7 +40,7 @@
+  *      8145136 8145952 8164784 8037111 8081643 7037368 8178872 8185841 8190918
+  *      8187946 8195478 8181157 8179071 8193552 8202026 8204269 8202537 8208746
+  *      8209775 8221432 8227127 8230284 8231273 8233579 8234288 8250665 8255086
+- *      8251317 8274658 8283277 8283805 8265315
++ *      8251317 8274658 8283277 8283805 8265315 8296715
+  * @summary Verify locale data
+  * @modules java.base/sun.util.resources
+  * @modules jdk.localedata
+
