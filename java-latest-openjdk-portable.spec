@@ -344,7 +344,7 @@
 # New Version-String scheme-style defines
 %global featurever 19
 %global interimver 0
-%global updatever 1
+%global updatever 2
 %global patchver 0
 # buildjdkver is usually same as %%{featurever},
 # but in time of bootstrap of next jdk, it is featurever-1,
@@ -391,8 +391,8 @@
 %global origin_nice     OpenJDK
 %global top_level_dir_name   %{origin}
 %global top_level_dir_name_backup %{top_level_dir_name}-backup
-%global buildver        10
-%global rpmrelease      3
+%global buildver        7
+%global rpmrelease      1
 # Priority must be 8 digits in total; up to openjdk 1.8, we were using 18..... so when we moved to 11, we had to add another digit
 %if %is_system_jdk
 # Using 10 digits may overflow the int used for priority, so we combine the patch and build versions
@@ -695,21 +695,17 @@ Patch1001: fips-19u-%{fipsver}.patch
 
 #############################################
 #
-# OpenJDK patches targetted for 19.0.2
+# OpenJDK patches which missed 19.0.2
 #
 #############################################
-# JDK-8293834: Update CLDR data following tzdata 2022c update
-Patch2001: jdk8293834-kyiv_cldr_update.patch
-# JDK-8294357: (tz) Update Timezone Data to 2022d
-Patch2002: jdk8294357-tzdata2022d.patch
-# JDK-8295173: (tz) Update Timezone Data to 2022e
-Patch2003: jdk8295173-tzdata2022e.patch
-# JDK-8296108: (tz) Update Timezone Data to 2022f
-Patch2004: jdk8296108-tzdata2022f.patch
-# JDK-8296715: CLDR v42 update for tzdata 2022f
-Patch2005: jdk8296715-cldr2022f.patch
 # JDK-8297804: (tz) Update Timezone Data to 2022g
 Patch2006: jdk8297804-tzdata2022g.patch
+# JDK-8295447: NullPointerException with invalid pattern matching construct in constructor call
+Patch2007: jdk8295447-npe_in_constructor.patch
+# JDK-8296239: ISO 4217 Amendment 174 Update
+Patch2008: jdk8296239-iso4217_up174.patch
+# JDK-8299439: java/text/Format/NumberFormat/CurrencyFormat.java fails for hr_HR
+Patch2009: jdk8299439-test_for_hr.patch 
 
 BuildRequires: autoconf
 BuildRequires: automake
@@ -971,13 +967,11 @@ pushd %{top_level_dir_name}
 %patch1001 -p1
 # nss.cfg PKCS11 support; must come last as it also alters java.security
 %patch1000 -p1
-# tzdata updates targetted for 19.0.2
-%patch2001 -p1
-%patch2002 -p1
-%patch2003 -p1
-%patch2004 -p1
-%patch2005 -p1
+# updates which missed 19.0.2
 %patch2006 -p1
+%patch2007 -p1
+%patch2008 -p1
+%patch2009 -p1 
 popd # openjdk
 
 %patch600
@@ -1607,6 +1601,15 @@ done
 %endif
 
 %changelog
+ * Thu Jan 26 2023 Andrew Hughes <gnu.andrew@redhat.com> - 1:19.0.2.0.7-1.rolling
+- Update to jdk-19.0.2 release
+- Update release notes to 19.0.2
+- Drop JDK-8293834 (CLDR update for Kyiv) which is now upstream
+- Drop JDK-8294357 (tzdata2022d), JDK-8295173 (tzdata2022e) & JDK-8296108 (tzdata2022f) local patches which are now upstream
+- Drop JDK-8296715 (CLDR update for 2022f) which is now upstream
+- Add local patch JDK-8295447 (javac NPE) which was accepted into 19u upstream but not in the GA tag
+- Add local patches for JDK-8296239 & JDK-8299439 (Croatia Euro update) which are present in 8u, 11u & 17u releases
+
 * Thu Jan 19 2023 Andrew Hughes <gnu.andrew@redhat.com> - 1:19.0.1.0.10-3.rolling
  - Update in-tree tzdata & CLDR to 2022g with JDK-8296108, JDK-8296715 & JDK-8297804
  - Update TestTranslations.java to test the new America/Ciudad_Juarez zone
