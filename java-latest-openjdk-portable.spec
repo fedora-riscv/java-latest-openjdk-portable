@@ -1502,10 +1502,14 @@ if ! nm $JAVA_HOME/bin/%{alt_java_name} | grep set_speculation ; then true ; els
 $JAVA_HOME/bin/javac -d . %{SOURCE16}
 $JAVA_HOME/bin/java $(echo $(basename %{SOURCE16})|sed "s|\.java||") "%{oj_vendor}" "%{oj_vendor_url}" "%{oj_vendor_bug_url}" "%{oj_vendor_version}"
 
-# Check translations are available for new timezones
+%if ! 0%{?flatpak}
+# Check translations are available for new timezones (during flatpak builds, the
+# tzdb.dat used by this test is not where the test expects it, so this is
+# disabled for flatpak builds) 
 $JAVA_HOME/bin/javac -d . %{SOURCE18}
 $JAVA_HOME/bin/java $(echo $(basename %{SOURCE18})|sed "s|\.java||") JRE
 $JAVA_HOME/bin/java -Djava.locale.providers=CLDR $(echo $(basename %{SOURCE18})|sed "s|\.java||") CLDR
+%endif
 
 %if %{include_staticlibs}
 # Check debug symbols in static libraries (smoke test)
@@ -1594,6 +1598,9 @@ done
 %endif
 
 %changelog
+* Thu Jan 19 2023 Stephan Bergmann <sbergman@redhat.com> - 1:19.0.1.0.10-3.rolling
+ - Fix flatpak builds by disabling TestTranslations test due to missing tzdb.dat
+
 * Thu Jan 19 2023 Fedora Release Engineering <releng@fedoraproject.org> - 1:19.0.1.0.10-3.rolling.1
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_38_Mass_Rebuild
 
