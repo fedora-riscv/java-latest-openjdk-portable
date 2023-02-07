@@ -1286,6 +1286,10 @@ EOF
     fi
 }
 
+# stubs to copy icons to final images
+abs_src_path=$(pwd)/openjdk/src
+icon_stub_path=java.desktop/unix/classes/sun/awt/X11
+
 %if %{build_hotspot_first}
   # Build a fresh libjvm.so first and use it to bootstrap
   cp -LR --preserve=mode,timestamps %{bootjdk} newboot
@@ -1349,9 +1353,13 @@ for suffix in %{build_loop} ; do
 
   # Final setup on the main image
   top_dir_abs_main_build_path=$(pwd)/%{buildoutputdir -- ${suffix}%{main_suffix}}
-  installjdk ${top_dir_abs_main_build_path}/images/%{jdkimage}
-  installjdk ${top_dir_abs_main_build_path}/images/%{jreimage}
-  # Check debug symbols were built into the dynamic libraries
+  for image in %{jdkimage} %{jreimage} ; do
+    imagePath=${top_dir_abs_main_build_path}/images/${image}
+    installjdk ${imagePath}
+    mkdir -p ${imagePath}/ext_stubs/${icon_stub_path}
+    cp -av ${abs_src_path}/${icon_stub_path}/*.png ${imagePath}/ext_stubs/${icon_stub_path}
+  done
+  # Check debug symbols were built into the dynamic libraries; todo,  why it passes in JDK only?
   debugcheckjdk ${top_dir_abs_main_build_path}/images/%{jdkimage}
 
   # Print release information
