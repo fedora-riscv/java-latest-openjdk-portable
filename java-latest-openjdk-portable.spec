@@ -1603,6 +1603,7 @@ done
 - removed --disable-sysconf-nss due to missing patch 1001 from configure
 -- todo return both patch1001 and disable-sysconf-nss!
 - adapted rh1750419-redhat_alt_java.patch and rh1750419-redhat_alt_java.patch patches
+- local build was failing, unless launched --without fresh_libjvm
 
 * Tue Feb 07  2023 Jiri Vanel <jvanek@redhat.com> - 1:19.0.2.0.7-2.rolling
 - added png icons from x11 source package, so they can be reused by rpms
