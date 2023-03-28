@@ -112,6 +112,6 @@ index b734fe2ba78..79dc8307650 100644
 +#endif
 +#endif
 +
- #ifdef _MSC_VER
- #if _MSC_VER > 1400 && _MSC_VER < 1600
- 
+ /*
+  * Entry point.
+  */

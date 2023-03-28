@@ -9,4 +9,4 @@ index 68a9c1a2d08..7aa25eb2cb7 100644
 +#security.provider.tbd=SunPKCS11 ${java.home}/lib/security/nss.cfg
  
  #
- # Security providers used when FIPS mode support is active
+ # A list of preferred providers for specific algorithms. These providers will

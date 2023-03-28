@@ -36,6 +36,9 @@ fi
 set -e
 
 OPENJDK_URL_DEFAULT=https://github.com
+PROJECT_NAME_DEFAULT=openjdk
+REPO_NAME_DEFAULT=jdk20u
+VERSION_DEFAULT=jdk-20+36
 COMPRESSION_DEFAULT=xz
 # Corresponding IcedTea version
 ICEDTEA_VERSION=13.0
@@ -55,11 +58,20 @@ fi
 
 
 if [ "x$VERSION" = "x" ] ; then
-    echo "No VERSION specified"
-    exit -2
+    VERSION="$VERSION_DEFAULT"
 fi
 echo "Version: ${VERSION}"
-    
+
+if [ "x$REPO_NAME" = "x" ] ; then
+    REPO_NAME="$REPO_NAME_DEFAULT"
+fi
+echo "Repo name: ${VERSION}"
+
+if [ "x$PROJECT_NAME" = "x" ] ; then
+    PROJECT_NAME="$PROJECT_NAME_DEFAULT"
+fi
+echo "Version: ${PROJECT_NAME}"
+  
 # REPO_NAME is only needed when we default on REPO_ROOT and FILE_NAME_ROOT
 if [ "x$FILE_NAME_ROOT" = "x" -o "x$REPO_ROOT" = "x" ] ; then
   if [ "x$PROJECT_NAME" = "x" ] ; then
