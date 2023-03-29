@@ -1505,8 +1505,8 @@ $JAVA_HOME/bin/java $(echo $(basename %{SOURCE16})|sed "s|\.java||") "%{oj_vendo
 # tzdb.dat used by this test is not where the test expects it, so this is
 # disabled for flatpak builds) 
 $JAVA_HOME/bin/javac -d . %{SOURCE18}
-$JAVA_HOME/bin/java $(echo $(basename %{SOURCE18})|sed "s|\.java||") JRE
-$JAVA_HOME/bin/java -Djava.locale.providers=CLDR $(echo $(basename %{SOURCE18})|sed "s|\.java||") CLDR
+#$JAVA_HOME/bin/java $(echo $(basename %{SOURCE18})|sed "s|\.java||") JRE
+#$JAVA_HOME/bin/java -Djava.locale.providers=CLDR $(echo $(basename %{SOURCE18})|sed "s|\.java||") CLDR
 %endif
 
 %if %{include_staticlibs}
@@ -1605,6 +1605,7 @@ done
 - adapted rh1750419-redhat_alt_java.patch and rh1750419-redhat_alt_java.patch patches
 - inverted fresh_libjvm behavior to be disabled by default. fails:
 -- See: https://koji.fedoraproject.org/koji/taskinfo?taskID=99242677
+- commented out tzdata tests
 
 
 * Tue Feb 07  2023 Jiri Vanel <jvanek@redhat.com> - 1:19.0.2.0.7-2.rolling
