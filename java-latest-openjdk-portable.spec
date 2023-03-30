@@ -952,17 +952,17 @@ sh %{SOURCE12} %{top_level_dir_name}
 
 # Patch the JDK
 pushd %{top_level_dir_name}
-%patch 1 -p1
-%patch 2 -p1
-%patch 3 -p1
-%patch 6 -p1
+%patch1 -p1
+%patch2 -p1
+%patch3 -p1
+%patch6 -p1
 # Add crypto policy and FIPS support
-#%%patch 1001 -p1 - todo, adapt fips patch for jdk20
+#%%patch1001 -p1 - todo, adapt fips patch for jdk20
 # nss.cfg PKCS11 support; must come last as it also alters java.security
-%patch 1000 -p1
+%patch1000 -p1
 popd # openjdk
 
-%patch 600
+%patch600
 
 # The OpenJDK version file includes the current
 # upstream version information. For some reason,
@@ -1606,7 +1606,6 @@ done
 - inverted fresh_libjvm behavior to be disabled by default. fails:
 -- See: https://koji.fedoraproject.org/koji/taskinfo?taskID=99242677
 - commented out tzdata tests
-- moved from deprecated patchN to patch N
 
 
 * Tue Feb 07  2023 Jiri Vanel <jvanek@redhat.com> - 1:19.0.2.0.7-2.rolling
