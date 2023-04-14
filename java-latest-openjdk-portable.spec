@@ -1552,18 +1552,22 @@ done
 # placeholder
 %endif
 
+%if %{include_normal_build}
 %files devel
 %{_jvmdir}/%{jdkportablearchive -- %%{nil}}
 #%{_jvmdir}/%{jdkportablearchive -- .debuginfo}
 %{_jvmdir}/%{jdkportablearchive -- %%{nil}}.sha256sum
 #%{_jvmdir}/%{jdkportablearchive -- .debuginfo}.sha256sum
 %license %{unpacked_licenses}/%{jdkportablearchive -- %%{nil}}
+%endif
 
+%if %{include_normal_build}
 %if %{include_staticlibs}
 %files static-libs
 %{_jvmdir}/%{staticlibsportablearchive -- %%{nil}}
 %{_jvmdir}/%{staticlibsportablearchive -- %%{nil}}.sha256sum
 %license %{unpacked_licenses}/%{jdkportablearchive -- %%{nil}}
+%endif
 %endif
 
 %if %{include_debug_build}
