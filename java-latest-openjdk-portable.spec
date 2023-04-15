@@ -1471,7 +1471,7 @@ done
 ################################################################################
 # the licenses are packed onloy once and shared
 mkdir -p $RPM_BUILD_ROOT%{unpacked_licenses}
-mv ../%{jdkportablearchive -- "%{normal_suffix}"}-legal $RPM_BUILD_ROOT%{unpacked_licenses}/%{jdkportablearchive -- "%{normal_suffix}"}
+mv ../%{jdkportablearchive -- "%{normal_suffix}"}-legal $RPM_BUILD_ROOT%{unpacked_licenses}/%{jdkportablesourcesarchive -- "%{normal_suffix}"}
 # To show sha in the build log
 for file in `ls $RPM_BUILD_ROOT%{_jvmdir}/*.sha256sum` ; do ls -l $file ; cat $file ; done
 ################################################################################
@@ -1560,7 +1560,7 @@ done
 # main package builds always
 %{_jvmdir}/%{jreportablearchive -- %%{nil}}
 %{_jvmdir}/%{jreportablearchive -- %%{nil}}.sha256sum
-%license %{unpacked_licenses}/%{jdkportablearchive -- %%{nil}}
+%license %{unpacked_licenses}/%{jdkportablesourcesarchive -- %%{nil}}
 %else
 %files
 # placeholder
@@ -1572,7 +1572,7 @@ done
 #%{_jvmdir}/%{jdkportablearchive -- .debuginfo}
 %{_jvmdir}/%{jdkportablearchive -- %%{nil}}.sha256sum
 #%{_jvmdir}/%{jdkportablearchive -- .debuginfo}.sha256sum
-%license %{unpacked_licenses}/%{jdkportablearchive -- %%{nil}}
+%license %{unpacked_licenses}/%{jdkportablesourcesarchive -- %%{nil}}
 %endif
 
 %if %{include_normal_build}
@@ -1580,7 +1580,7 @@ done
 %files static-libs
 %{_jvmdir}/%{staticlibsportablearchive -- %%{nil}}
 %{_jvmdir}/%{staticlibsportablearchive -- %%{nil}}.sha256sum
-%license %{unpacked_licenses}/%{jdkportablearchive -- %%{nil}}
+%license %{unpacked_licenses}/%{jdkportablesourcesarchive -- %%{nil}}
 %endif
 %endif
 
@@ -1588,18 +1588,18 @@ done
 %files slowdebug
 %{_jvmdir}/%{jreportablearchive -- .slowdebug}
 %{_jvmdir}/%{jreportablearchive -- .slowdebug}.sha256sum
-%license %{unpacked_licenses}/%{jdkportablearchive -- %%{nil}}
+%license %{unpacked_licenses}/%{jdkportablesourcesarchive -- %%{nil}}
 
 %files devel-slowdebug
 %{_jvmdir}/%{jdkportablearchive -- .slowdebug}
 %{_jvmdir}/%{jdkportablearchive -- .slowdebug}.sha256sum
-%license %{unpacked_licenses}/%{jdkportablearchive -- %%{nil}}
+%license %{unpacked_licenses}/%{jdkportablesourcesarchive -- %%{nil}}
 
 %if %{include_staticlibs}
 %files static-libs-slowdebug
 %{_jvmdir}/%{staticlibsportablearchive -- .slowdebug}
 %{_jvmdir}/%{staticlibsportablearchive -- .slowdebug}.sha256sum
-%license %{unpacked_licenses}/%{jdkportablearchive -- %%{nil}}
+%license %{unpacked_licenses}/%{jdkportablesourcesarchive -- %%{nil}}
 %endif
 %endif
 
@@ -1607,31 +1607,32 @@ done
 %files fastdebug
 %{_jvmdir}/%{jreportablearchive -- .fastdebug}
 %{_jvmdir}/%{jreportablearchive -- .fastdebug}.sha256sum
-%license %{unpacked_licenses}/%{jdkportablearchive -- %%{nil}}
+%license %{unpacked_licenses}/%{jdkportablesourcesarchive -- %%{nil}}
 
 %files devel-fastdebug
 %{_jvmdir}/%{jdkportablearchive -- .fastdebug}
 %{_jvmdir}/%{jdkportablearchive -- .fastdebug}.sha256sum
-%license %{unpacked_licenses}/%{jdkportablearchive -- %%{nil}}
+%license %{unpacked_licenses}/%{jdkportablesourcesarchive -- %%{nil}}
 
 %if %{include_staticlibs}
 %files static-libs-fastdebug
 %{_jvmdir}/%{staticlibsportablearchive -- .fastdebug}
 %{_jvmdir}/%{staticlibsportablearchive -- .fastdebug}.sha256sum
-%license %{unpacked_licenses}/%{jdkportablearchive -- %%{nil}}
+%license %{unpacked_licenses}/%{jdkportablesourcesarchive -- %%{nil}}
 %endif
 %endif
 
 %files sources
 %{_jvmdir}/%{jdkportablesourcesarchive -- %%{nil}}
 %{_jvmdir}/%{jdkportablesourcesarchive -- %%{nil}}.sha256sum
-%license %{unpacked_licenses}/%{jdkportablearchive -- %%{nil}}
+%license %{unpacked_licenses}/%{jdkportablesourcesarchive -- %%{nil}}
 
 %changelog
 * Fri Apr 14  2023 Jiri Vanek <jvanek@redhat.com> - 1:20.0.0.0.36-3.rolling
 - introduced noarch src archive
 - replaced nasty handling of icons.
 - needed for icons and src reference for rpms (debuginfo, src subpkg)
+- licences moved to proper sharable noarch
 
 * Mon Apr 10 2023 Andrew Hughes <gnu.andrew@redhat.com> - 1:20.0.0.0.36-2.rolling
 - Complete update to OpenJDK 20
