@@ -910,7 +910,6 @@ The %{origin_nice} %{featurever} libraries for static linking - portable edition
 
 %package sources
 Summary: %{origin_nice} %{featurever} full patched sources of portable JDK
-BuildArch:  noarch
 
 %description sources
 The %{origin_nice} %{featurever} full patched sources of portable JDK to build, attach to debuggers or for debuginfo
@@ -1629,7 +1628,7 @@ done
 
 %changelog
 * Fri Apr 14  2023 Jiri Vanek <jvanek@redhat.com> - 1:20.0.0.0.36-3.rolling
-- introduced noarch src archive
+- introduced archfull src archive
 - replaced nasty handling of icons.
 - needed for icons and src reference for rpms (debuginfo, src subpkg)
 - licences moved to proper sharable noarch
