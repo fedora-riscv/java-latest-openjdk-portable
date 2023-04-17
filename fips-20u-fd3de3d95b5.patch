@@ -109,10 +109,10 @@ index 7a1d8d80bb2..1807cb71073 100644
    BASIC_JDKLIB_LIBS=""
    if test "x$TOOLCHAIN_TYPE" != xmicrosoft; then
 diff --git a/make/autoconf/spec.gmk.in b/make/autoconf/spec.gmk.in
-index 8908a5deb3c..2fce35f5b2d 100644
+index 9448cb9b7e8..8d3d931e951 100644
 --- a/make/autoconf/spec.gmk.in
 +++ b/make/autoconf/spec.gmk.in
-@@ -854,6 +854,10 @@ INSTALL_SYSCONFDIR=@sysconfdir@
+@@ -859,6 +859,10 @@ INSTALL_SYSCONFDIR=@sysconfdir@
  # Libraries
  #
  
@@ -124,10 +124,10 @@ index 8908a5deb3c..2fce35f5b2d 100644
  LCMS_CFLAGS:=@LCMS_CFLAGS@
  LCMS_LIBS:=@LCMS_LIBS@
 diff --git a/make/modules/java.base/Lib.gmk b/make/modules/java.base/Lib.gmk
-index 0d5a6c9846c..5ca12054351 100644
+index 3b782577258..f515b0ba241 100644
 --- a/make/modules/java.base/Lib.gmk
 +++ b/make/modules/java.base/Lib.gmk
-@@ -164,6 +164,31 @@ ifeq ($(call isTargetOsType, unix), true)
+@@ -163,6 +163,29 @@ ifeq ($(call isTargetOsType, unix), true)
    endif
  endif
  
@@ -142,255 +142,23 @@ index 0d5a6c9846c..5ca12054351 100644
 +  LIBSYSTEMCONF_CXXFLAGS += $(NSS_CFLAGS) -DSYSCONF_NSS
 +endif
 +
-+ifeq ($(OPENJDK_BUILD_OS), linux)
-+  $(eval $(call SetupJdkLibrary, BUILD_LIBSYSTEMCONF, \
-+      NAME := systemconf, \
-+      OPTIMIZATION := LOW, \
-+      CFLAGS := $(CFLAGS_JDKLIB) $(LIBSYSTEMCONF_CFLAGS), \
-+      CXXFLAGS := $(CXXFLAGS_JDKLIB) $(LIBSYSTEMCONF_CXXFLAGS), \
-+      LDFLAGS := $(LDFLAGS_JDKLIB) \
-+          $(call SET_SHARED_LIBRARY_ORIGIN), \
-+      LIBS_unix := $(LIBDL) $(NSS_LIBS), \
-+  ))
++$(eval $(call SetupJdkLibrary, BUILD_LIBSYSTEMCONF, \
++    NAME := systemconf, \
++    OPTIMIZATION := LOW, \
++    CFLAGS := $(CFLAGS_JDKLIB) $(LIBSYSTEMCONF_CFLAGS), \
++    CXXFLAGS := $(CXXFLAGS_JDKLIB) $(LIBSYSTEMCONF_CXXFLAGS), \
++    LDFLAGS := $(LDFLAGS_JDKLIB) \
++        $(call SET_SHARED_LIBRARY_ORIGIN), \
++    LIBS_unix := $(LIBDL) $(NSS_LIBS), \
++))
 +
-+  TARGETS += $(BUILD_LIBSYSTEMCONF)
-+endif
++TARGETS += $(BUILD_LIBSYSTEMCONF)
 +
  ################################################################################
  # Create the symbols file for static builds.
  
-diff --git a/src/java.base/linux/native/libsystemconf/systemconf.c b/src/java.base/linux/native/libsystemconf/systemconf.c
-new file mode 100644
-index 00000000000..8dcb7d9073f
---- /dev/null
-+++ b/src/java.base/linux/native/libsystemconf/systemconf.c
-@@ -0,0 +1,224 @@
-+/*
-+ * Copyright (c) 2021, Red Hat, Inc.
-+ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
-+ *
-+ * This code is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License version 2 only, as
-+ * published by the Free Software Foundation.  Oracle designates this
-+ * particular file as subject to the "Classpath" exception as provided
-+ * by Oracle in the LICENSE file that accompanied this code.
-+ *
-+ * This code is distributed in the hope that it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
-+ * version 2 for more details (a copy is included in the LICENSE file that
-+ * accompanied this code).
-+ *
-+ * You should have received a copy of the GNU General Public License version
-+ * 2 along with this work; if not, write to the Free Software Foundation,
-+ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
-+ *
-+ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
-+ * or visit www.oracle.com if you need additional information or have any
-+ * questions.
-+ */
-+
-+#include <jni.h>
-+#include <jni_util.h>
-+#include "jvm_md.h"
-+#include <stdio.h>
-+
-+#ifdef SYSCONF_NSS
-+#include <nss3/pk11pub.h>
-+#else
-+#include <dlfcn.h>
-+#endif //SYSCONF_NSS
-+
-+#include "java_security_SystemConfigurator.h"
-+
-+#define MSG_MAX_SIZE 256
-+#define FIPS_ENABLED_PATH "/proc/sys/crypto/fips_enabled"
-+
-+typedef int (SECMOD_GET_SYSTEM_FIPS_ENABLED_TYPE)(void);
-+
-+static SECMOD_GET_SYSTEM_FIPS_ENABLED_TYPE *getSystemFIPSEnabled;
-+static jmethodID debugPrintlnMethodID = NULL;
-+static jobject debugObj = NULL;
-+
-+static void dbgPrint(JNIEnv *env, const char* msg)
-+{
-+    jstring jMsg;
-+    if (debugObj != NULL) {
-+        jMsg = (*env)->NewStringUTF(env, msg);
-+        CHECK_NULL(jMsg);
-+        (*env)->CallVoidMethod(env, debugObj, debugPrintlnMethodID, jMsg);
-+    }
-+}
-+
-+static void throwIOException(JNIEnv *env, const char *msg)
-+{
-+    jclass cls = (*env)->FindClass(env, "java/io/IOException");
-+    if (cls != 0)
-+        (*env)->ThrowNew(env, cls, msg);
-+}
-+
-+static void handle_msg(JNIEnv *env, const char* msg, int msg_bytes)
-+{
-+  if (msg_bytes > 0 && msg_bytes < MSG_MAX_SIZE) {
-+    dbgPrint(env, msg);
-+  } else {
-+    dbgPrint(env, "systemconf: cannot render message");
-+  }
-+}
-+
-+// Only used when NSS is not linked at build time
-+#ifndef SYSCONF_NSS
-+
-+static void *nss_handle;
-+
-+static jboolean loadNSS(JNIEnv *env)
-+{
-+  char msg[MSG_MAX_SIZE];
-+  int msg_bytes;
-+  const char* errmsg;
-+
-+  nss_handle = dlopen(JNI_LIB_NAME("nss3"), RTLD_LAZY);
-+  if (nss_handle == NULL) {
-+    errmsg = dlerror();
-+    msg_bytes = snprintf(msg, MSG_MAX_SIZE, "loadNSS: dlopen: %s\n",
-+                         errmsg);
-+    handle_msg(env, msg, msg_bytes);
-+    return JNI_FALSE;
-+  }
-+  dlerror(); /* Clear errors */
-+  getSystemFIPSEnabled = (SECMOD_GET_SYSTEM_FIPS_ENABLED_TYPE*)dlsym(nss_handle, "SECMOD_GetSystemFIPSEnabled");
-+  if ((errmsg = dlerror()) != NULL) {
-+    msg_bytes = snprintf(msg, MSG_MAX_SIZE, "loadNSS: dlsym: %s\n",
-+                         errmsg);
-+    handle_msg(env, msg, msg_bytes);
-+    return JNI_FALSE;
-+  }
-+  return JNI_TRUE;
-+}
-+
-+static void closeNSS(JNIEnv *env)
-+{
-+  char msg[MSG_MAX_SIZE];
-+  int msg_bytes;
-+  const char* errmsg;
-+
-+  if (dlclose(nss_handle) != 0) {
-+    errmsg = dlerror();
-+    msg_bytes = snprintf(msg, MSG_MAX_SIZE, "closeNSS: dlclose: %s\n",
-+                         errmsg);
-+    handle_msg(env, msg, msg_bytes);
-+  }
-+}
-+
-+#endif
-+
-+/*
-+ * Class:     java_security_SystemConfigurator
-+ * Method:    JNI_OnLoad
-+ */
-+JNIEXPORT jint JNICALL DEF_JNI_OnLoad(JavaVM *vm, void *reserved)
-+{
-+    JNIEnv *env;
-+    jclass sysConfCls, debugCls;
-+    jfieldID sdebugFld;
-+
-+    if ((*vm)->GetEnv(vm, (void**) &env, JNI_VERSION_1_2) != JNI_OK) {
-+        return JNI_EVERSION; /* JNI version not supported */
-+    }
-+
-+    sysConfCls = (*env)->FindClass(env,"java/security/SystemConfigurator");
-+    if (sysConfCls == NULL) {
-+        printf("libsystemconf: SystemConfigurator class not found\n");
-+        return JNI_ERR;
-+    }
-+    sdebugFld = (*env)->GetStaticFieldID(env, sysConfCls,
-+            "sdebug", "Lsun/security/util/Debug;");
-+    if (sdebugFld == NULL) {
-+        printf("libsystemconf: SystemConfigurator::sdebug field not found\n");
-+        return JNI_ERR;
-+    }
-+    debugObj = (*env)->GetStaticObjectField(env, sysConfCls, sdebugFld);
-+    if (debugObj != NULL) {
-+        debugCls = (*env)->FindClass(env,"sun/security/util/Debug");
-+        if (debugCls == NULL) {
-+            printf("libsystemconf: Debug class not found\n");
-+            return JNI_ERR;
-+        }
-+        debugPrintlnMethodID = (*env)->GetMethodID(env, debugCls,
-+                "println", "(Ljava/lang/String;)V");
-+        if (debugPrintlnMethodID == NULL) {
-+            printf("libsystemconf: Debug::println(String) method not found\n");
-+            return JNI_ERR;
-+        }
-+        debugObj = (*env)->NewGlobalRef(env, debugObj);
-+    }
-+
-+#ifdef SYSCONF_NSS
-+    getSystemFIPSEnabled = *SECMOD_GetSystemFIPSEnabled;
-+#else
-+    if (loadNSS(env) == JNI_FALSE) {
-+      dbgPrint(env, "libsystemconf: Failed to load NSS library.");
-+    }
-+#endif
-+
-+    return (*env)->GetVersion(env);
-+}
-+
-+/*
-+ * Class:     java_security_SystemConfigurator
-+ * Method:    JNI_OnUnload
-+ */
-+JNIEXPORT void JNICALL DEF_JNI_OnUnload(JavaVM *vm, void *reserved)
-+{
-+    JNIEnv *env;
-+
-+    if (debugObj != NULL) {
-+        if ((*vm)->GetEnv(vm, (void**) &env, JNI_VERSION_1_2) != JNI_OK) {
-+            return; /* Should not happen */
-+        }
-+#ifndef SYSCONF_NSS
-+        closeNSS(env);
-+#endif
-+        (*env)->DeleteGlobalRef(env, debugObj);
-+    }
-+}
-+
-+JNIEXPORT jboolean JNICALL Java_java_security_SystemConfigurator_getSystemFIPSEnabled
-+  (JNIEnv *env, jclass cls)
-+{
-+    int fips_enabled;
-+    char msg[MSG_MAX_SIZE];
-+    int msg_bytes;
-+
-+    if (getSystemFIPSEnabled != NULL) {
-+      dbgPrint(env, "getSystemFIPSEnabled: calling SECMOD_GetSystemFIPSEnabled");
-+      fips_enabled = (*getSystemFIPSEnabled)();
-+      msg_bytes = snprintf(msg, MSG_MAX_SIZE, "getSystemFIPSEnabled:"   \
-+                           " SECMOD_GetSystemFIPSEnabled returned 0x%x", fips_enabled);
-+      handle_msg(env, msg, msg_bytes);
-+      return (fips_enabled == 1 ? JNI_TRUE : JNI_FALSE);
-+    } else {
-+      FILE *fe;
-+
-+      dbgPrint(env, "getSystemFIPSEnabled: reading " FIPS_ENABLED_PATH);
-+      if ((fe = fopen(FIPS_ENABLED_PATH, "r")) == NULL) {
-+        throwIOException(env, "Cannot open " FIPS_ENABLED_PATH);
-+        return JNI_FALSE;
-+      }
-+      fips_enabled = fgetc(fe);
-+      fclose(fe);
-+      if (fips_enabled == EOF) {
-+        throwIOException(env, "Cannot read " FIPS_ENABLED_PATH);
-+        return JNI_FALSE;
-+      }
-+      msg_bytes = snprintf(msg, MSG_MAX_SIZE, "getSystemFIPSEnabled:"   \
-+                           " read character is '%c'", fips_enabled);
-+      handle_msg(env, msg, msg_bytes);
-+      return (fips_enabled == '1' ? JNI_TRUE : JNI_FALSE);
-+    }
-+}
 diff --git a/src/java.base/share/classes/com/sun/crypto/provider/SunJCE.java b/src/java.base/share/classes/com/sun/crypto/provider/SunJCE.java
-index 38836d2701e..324620a8e9b 100644
+index 38836d2701e..d967010b848 100644
 --- a/src/java.base/share/classes/com/sun/crypto/provider/SunJCE.java
 +++ b/src/java.base/share/classes/com/sun/crypto/provider/SunJCE.java
 @@ -31,6 +31,7 @@ import java.security.SecureRandom;
@@ -1006,89 +774,10 @@ index 38836d2701e..324620a8e9b 100644
  
          /*
           * Algorithm Parameter engines
-@@ -531,197 +540,199 @@ public final class SunJCE extends Provider {
-         psA("AlgorithmParameters", "ChaCha20-Poly1305",
-                 "com.sun.crypto.provider.ChaCha20Poly1305Parameters", null);
+@@ -610,118 +619,120 @@ public final class SunJCE extends Provider {
+         ps("SecretKeyFactory", "PBEWithHmacSHA512AndAES_256",
+                 "com.sun.crypto.provider.PBEKeyFactory$PBEWithHmacSHA512AndAES_256");
  
--        /*
--         * Key factories
--         */
--        psA("KeyFactory", "DiffieHellman",
--                "com.sun.crypto.provider.DHKeyFactory",
--                null);
--
--        /*
--         * Secret-key factories
--         */
--        ps("SecretKeyFactory", "DES",
--                "com.sun.crypto.provider.DESKeyFactory");
--
--        psA("SecretKeyFactory", "DESede",
--                "com.sun.crypto.provider.DESedeKeyFactory", null);
--
--        psA("SecretKeyFactory", "PBEWithMD5AndDES",
--                "com.sun.crypto.provider.PBEKeyFactory$PBEWithMD5AndDES",
--                null);
--
--        /*
--         * Internal in-house crypto algorithm used for
--         * the JCEKS keystore type.  Since this was developed
--         * internally, there isn't an OID corresponding to this
--         * algorithm.
--         */
--        ps("SecretKeyFactory", "PBEWithMD5AndTripleDES",
--                "com.sun.crypto.provider.PBEKeyFactory$PBEWithMD5AndTripleDES");
--
--        psA("SecretKeyFactory", "PBEWithSHA1AndDESede",
--                "com.sun.crypto.provider.PBEKeyFactory$PBEWithSHA1AndDESede",
--                null);
--
--        psA("SecretKeyFactory", "PBEWithSHA1AndRC2_40",
--                "com.sun.crypto.provider.PBEKeyFactory$PBEWithSHA1AndRC2_40",
--                null);
--
--        psA("SecretKeyFactory", "PBEWithSHA1AndRC2_128",
--                "com.sun.crypto.provider.PBEKeyFactory$PBEWithSHA1AndRC2_128",
--                null);
--
--        psA("SecretKeyFactory", "PBEWithSHA1AndRC4_40",
--                "com.sun.crypto.provider.PBEKeyFactory$PBEWithSHA1AndRC4_40",
--                null);
--
--        psA("SecretKeyFactory", "PBEWithSHA1AndRC4_128",
--                "com.sun.crypto.provider.PBEKeyFactory$PBEWithSHA1AndRC4_128",
--                null);
--
--        ps("SecretKeyFactory", "PBEWithHmacSHA1AndAES_128",
--                "com.sun.crypto.provider.PBEKeyFactory$PBEWithHmacSHA1AndAES_128");
--
--        ps("SecretKeyFactory", "PBEWithHmacSHA224AndAES_128",
--                "com.sun.crypto.provider.PBEKeyFactory$PBEWithHmacSHA224AndAES_128");
--
--        ps("SecretKeyFactory", "PBEWithHmacSHA256AndAES_128",
--                "com.sun.crypto.provider.PBEKeyFactory$PBEWithHmacSHA256AndAES_128");
--
--        ps("SecretKeyFactory", "PBEWithHmacSHA384AndAES_128",
--                "com.sun.crypto.provider.PBEKeyFactory$PBEWithHmacSHA384AndAES_128");
--
--        ps("SecretKeyFactory", "PBEWithHmacSHA512AndAES_128",
--                "com.sun.crypto.provider.PBEKeyFactory$PBEWithHmacSHA512AndAES_128");
--
--        ps("SecretKeyFactory", "PBEWithHmacSHA1AndAES_256",
--                "com.sun.crypto.provider.PBEKeyFactory$PBEWithHmacSHA1AndAES_256");
--
--        ps("SecretKeyFactory", "PBEWithHmacSHA224AndAES_256",
--                "com.sun.crypto.provider.PBEKeyFactory$PBEWithHmacSHA224AndAES_256");
--
--        ps("SecretKeyFactory", "PBEWithHmacSHA256AndAES_256",
--                "com.sun.crypto.provider.PBEKeyFactory$PBEWithHmacSHA256AndAES_256");
--
--        ps("SecretKeyFactory", "PBEWithHmacSHA384AndAES_256",
--                "com.sun.crypto.provider.PBEKeyFactory$PBEWithHmacSHA384AndAES_256");
--
--        ps("SecretKeyFactory", "PBEWithHmacSHA512AndAES_256",
--                "com.sun.crypto.provider.PBEKeyFactory$PBEWithHmacSHA512AndAES_256");
--
 -        // PBKDF2
 -        psA("SecretKeyFactory", "PBKDF2WithHmacSHA1",
 -                "com.sun.crypto.provider.PBKDF2Core$HmacSHA1",
@@ -1202,85 +891,6 @@ index 38836d2701e..324620a8e9b 100644
 -                "com.sun.crypto.provider.TlsRsaPremasterSecretGenerator",
 -                List.of("SunTls12RsaPremasterSecret"), null);
 +        if (!systemFipsEnabled) {
-+            /*
-+             * Key factories
-+             */
-+            psA("KeyFactory", "DiffieHellman",
-+                    "com.sun.crypto.provider.DHKeyFactory",
-+                    null);
-+
-+            /*
-+             * Secret-key factories
-+             */
-+            ps("SecretKeyFactory", "DES",
-+                    "com.sun.crypto.provider.DESKeyFactory");
-+
-+            psA("SecretKeyFactory", "DESede",
-+                    "com.sun.crypto.provider.DESedeKeyFactory", null);
-+
-+            psA("SecretKeyFactory", "PBEWithMD5AndDES",
-+                    "com.sun.crypto.provider.PBEKeyFactory$PBEWithMD5AndDES",
-+                    null);
-+
-+            /*
-+             * Internal in-house crypto algorithm used for
-+             * the JCEKS keystore type.  Since this was developed
-+             * internally, there isn't an OID corresponding to this
-+             * algorithm.
-+             */
-+            ps("SecretKeyFactory", "PBEWithMD5AndTripleDES",
-+                    "com.sun.crypto.provider.PBEKeyFactory$PBEWithMD5AndTripleDES");
-+
-+            psA("SecretKeyFactory", "PBEWithSHA1AndDESede",
-+                    "com.sun.crypto.provider.PBEKeyFactory$PBEWithSHA1AndDESede",
-+                    null);
-+
-+            psA("SecretKeyFactory", "PBEWithSHA1AndRC2_40",
-+                    "com.sun.crypto.provider.PBEKeyFactory$PBEWithSHA1AndRC2_40",
-+                    null);
-+
-+            psA("SecretKeyFactory", "PBEWithSHA1AndRC2_128",
-+                    "com.sun.crypto.provider.PBEKeyFactory$PBEWithSHA1AndRC2_128",
-+                    null);
-+
-+            psA("SecretKeyFactory", "PBEWithSHA1AndRC4_40",
-+                    "com.sun.crypto.provider.PBEKeyFactory$PBEWithSHA1AndRC4_40",
-+                    null);
-+
-+            psA("SecretKeyFactory", "PBEWithSHA1AndRC4_128",
-+                    "com.sun.crypto.provider.PBEKeyFactory$PBEWithSHA1AndRC4_128",
-+                    null);
-+
-+            ps("SecretKeyFactory", "PBEWithHmacSHA1AndAES_128",
-+                    "com.sun.crypto.provider.PBEKeyFactory$PBEWithHmacSHA1AndAES_128");
-+
-+            ps("SecretKeyFactory", "PBEWithHmacSHA224AndAES_128",
-+                    "com.sun.crypto.provider.PBEKeyFactory$PBEWithHmacSHA224AndAES_128");
-+
-+            ps("SecretKeyFactory", "PBEWithHmacSHA256AndAES_128",
-+                    "com.sun.crypto.provider.PBEKeyFactory$PBEWithHmacSHA256AndAES_128");
-+
-+            ps("SecretKeyFactory", "PBEWithHmacSHA384AndAES_128",
-+                    "com.sun.crypto.provider.PBEKeyFactory$PBEWithHmacSHA384AndAES_128");
-+
-+            ps("SecretKeyFactory", "PBEWithHmacSHA512AndAES_128",
-+                    "com.sun.crypto.provider.PBEKeyFactory$PBEWithHmacSHA512AndAES_128");
-+
-+            ps("SecretKeyFactory", "PBEWithHmacSHA1AndAES_256",
-+                    "com.sun.crypto.provider.PBEKeyFactory$PBEWithHmacSHA1AndAES_256");
-+
-+            ps("SecretKeyFactory", "PBEWithHmacSHA224AndAES_256",
-+                    "com.sun.crypto.provider.PBEKeyFactory$PBEWithHmacSHA224AndAES_256");
-+
-+            ps("SecretKeyFactory", "PBEWithHmacSHA256AndAES_256",
-+                    "com.sun.crypto.provider.PBEKeyFactory$PBEWithHmacSHA256AndAES_256");
-+
-+            ps("SecretKeyFactory", "PBEWithHmacSHA384AndAES_256",
-+                    "com.sun.crypto.provider.PBEKeyFactory$PBEWithHmacSHA384AndAES_256");
-+
-+            ps("SecretKeyFactory", "PBEWithHmacSHA512AndAES_256",
-+                    "com.sun.crypto.provider.PBEKeyFactory$PBEWithHmacSHA512AndAES_256");
-+
 +            // PBKDF2
 +            psA("SecretKeyFactory", "PBKDF2WithHmacSHA1",
 +                    "com.sun.crypto.provider.PBKDF2Core$HmacSHA1",
@@ -1398,27 +1008,18 @@ index 38836d2701e..324620a8e9b 100644
  
      // Return the instance of this class or create one if needed.
 diff --git a/src/java.base/share/classes/java/security/Security.java b/src/java.base/share/classes/java/security/Security.java
-index 7218f536804..7be83f5eeaa 100644
+index 257dc172ee2..35cea6c54e7 100644
 --- a/src/java.base/share/classes/java/security/Security.java
 +++ b/src/java.base/share/classes/java/security/Security.java
-@@ -32,6 +32,7 @@ import java.net.URL;
- 
+@@ -34,6 +34,7 @@ import java.net.URL;
+ import jdk.internal.access.JavaSecurityPropertiesAccess;
  import jdk.internal.event.EventHelper;
  import jdk.internal.event.SecurityPropertyModificationEvent;
 +import jdk.internal.access.JavaSecuritySystemConfiguratorAccess;
  import jdk.internal.access.SharedSecrets;
  import jdk.internal.util.StaticProperty;
  import sun.security.util.Debug;
-@@ -47,12 +48,20 @@ import sun.security.jca.*;
-  * implementation-specific location, which is typically the properties file
-  * {@code conf/security/java.security} in the Java installation directory.
-  *
-+ * <p>Additional default values of security properties are read from a
-+ * system-specific location, if available.</p>
-+ *
-  * @author Benjamin Renaud
-  * @since 1.1
-  */
+@@ -58,6 +59,11 @@ import sun.security.jca.*;
  
  public final class Security {
  
@@ -1430,7 +1031,7 @@ index 7218f536804..7be83f5eeaa 100644
      /* Are we debugging? -- for developers */
      private static final Debug sdebug =
                          Debug.getInstance("properties");
-@@ -67,6 +76,19 @@ public final class Security {
+@@ -75,6 +81,19 @@ public final class Security {
      }
  
      static {
@@ -1450,26 +1051,19 @@ index 7218f536804..7be83f5eeaa 100644
          // doPrivileged here because there are multiple
          // things in initialize that might require privs.
          // (the FileInputStream call and the File.exists call,
-@@ -84,6 +106,7 @@ public final class Security {
+@@ -96,6 +115,7 @@ public final class Security {
+     private static void initialize() {
          props = new Properties();
-         boolean loadedProps = false;
          boolean overrideAll = false;
 +        boolean systemSecPropsEnabled = false;
  
          // first load the system properties file
          // to determine the value of security.overridePropertiesFile
-@@ -98,6 +121,7 @@ public final class Security {
-                 if (sdebug != null) {
-                     sdebug.println("reading security properties file: " +
-                                 propFile);
-+                    sdebug.println(props.toString());
-                 }
-             } catch (IOException e) {
-                 if (sdebug != null) {
-@@ -192,6 +216,61 @@ public final class Security {
+@@ -116,6 +136,61 @@ public final class Security {
              }
+             loadProps(null, extraPropFile, overrideAll);
          }
- 
++
 +        boolean sysUseProps = Boolean.valueOf(System.getProperty(SYS_PROP_SWITCH, "false"));
 +        boolean secUseProps = Boolean.valueOf(props.getProperty(SEC_PROP_SWITCH));
 +        if (sdebug != null) {
@@ -1489,9 +1083,7 @@ index 7218f536804..7be83f5eeaa 100644
 +            }
 +        }
 +
-+        // FIPS support depends on the contents of java.security so
-+        // ensure it has loaded first
-+        if (loadedProps && systemSecPropsEnabled) {
++        if (systemSecPropsEnabled) {
 +            boolean shouldEnable;
 +            String sysProp = System.getProperty("com.redhat.fips");
 +            if (sysProp == null) {
@@ -1525,15 +1117,25 @@ index 7218f536804..7be83f5eeaa 100644
 +                               "system security properties being enabled.");
 +            }
 +        }
++
+         initialSecurityProperties = (Properties) props.clone();
+         if (sdebug != null) {
+             for (String key : props.stringPropertyNames()) {
+@@ -126,7 +201,7 @@ public final class Security {
+ 
      }
  
-     /*
+-    private static boolean loadProps(File masterFile, String extraPropFile, boolean overrideAll) {
++    static boolean loadProps(File masterFile, String extraPropFile, boolean overrideAll) {
+         InputStream is = null;
+         try {
+             if (masterFile != null && masterFile.exists()) {
 diff --git a/src/java.base/share/classes/java/security/SystemConfigurator.java b/src/java.base/share/classes/java/security/SystemConfigurator.java
 new file mode 100644
-index 00000000000..98ffced455b
+index 00000000000..9d26a54f5d4
 --- /dev/null
 +++ b/src/java.base/share/classes/java/security/SystemConfigurator.java
-@@ -0,0 +1,249 @@
+@@ -0,0 +1,232 @@
 +/*
 + * Copyright (c) 2019, 2021, Red Hat, Inc.
 + *
@@ -1614,26 +1216,9 @@ index 00000000000..98ffced455b
 +     * security.useSystemPropertiesFile is true.
 +     */
 +    static boolean configureSysProps(Properties props) {
-+        boolean systemSecPropsLoaded = false;
-+
-+        try (BufferedInputStream bis =
-+                new BufferedInputStream(
-+                        new FileInputStream(CRYPTO_POLICIES_JAVA_CONFIG))) {
-+            props.load(bis);
-+            systemSecPropsLoaded = true;
-+            if (sdebug != null) {
-+                sdebug.println("reading system security properties file " +
-+                        CRYPTO_POLICIES_JAVA_CONFIG);
-+                sdebug.println(props.toString());
-+            }
-+        } catch (IOException e) {
-+            if (sdebug != null) {
-+                sdebug.println("unable to load security properties from " +
-+                        CRYPTO_POLICIES_JAVA_CONFIG);
-+                e.printStackTrace();
-+            }
-+        }
-+        return systemSecPropsLoaded;
++        // now load the system file, if it exists, so its values
++        // will win if they conflict with the earlier values
++        return Security.loadProps(null, CRYPTO_POLICIES_JAVA_CONFIG, false);
 +    }
 +
 +    /*
@@ -1688,7 +1273,7 @@ index 00000000000..98ffced455b
 +                        sdebug.println("FIPS mode default keystore.type = " +
 +                                keystoreTypeValue);
 +                        sdebug.println("FIPS mode javax.net.ssl.keyStore = " +
-+                                System.getProperty("javax.net.ssl.keyStore", ""));
++                                        System.getProperty("javax.net.ssl.keyStore", ""));
 +                        sdebug.println("FIPS mode javax.net.ssl.trustStoreType = " +
 +                                System.getProperty("javax.net.ssl.trustStoreType", ""));
 +                    }
@@ -1821,10 +1406,10 @@ index 00000000000..3f3caac64dc
 +    boolean isPlainKeySupportEnabled();
 +}
 diff --git a/src/java.base/share/classes/jdk/internal/access/SharedSecrets.java b/src/java.base/share/classes/jdk/internal/access/SharedSecrets.java
-index 08e1133ffae..7d6e6b3cbc6 100644
+index cf76aa9ff94..9ecb14db126 100644
 --- a/src/java.base/share/classes/jdk/internal/access/SharedSecrets.java
 +++ b/src/java.base/share/classes/jdk/internal/access/SharedSecrets.java
-@@ -42,6 +42,7 @@ import java.io.PrintStream;
+@@ -43,6 +43,7 @@ import java.io.PrintStream;
  import java.io.PrintWriter;
  import java.io.RandomAccessFile;
  import java.security.ProtectionDomain;
@@ -1832,7 +1417,7 @@ index 08e1133ffae..7d6e6b3cbc6 100644
  import java.security.Signature;
  
  /** A repository of "shared secrets", which are a mechanism for
-@@ -87,6 +88,7 @@ public class SharedSecrets {
+@@ -89,6 +90,7 @@ public class SharedSecrets {
      private static JavaSecuritySpecAccess javaSecuritySpecAccess;
      private static JavaxCryptoSealedObjectAccess javaxCryptoSealedObjectAccess;
      private static JavaxCryptoSpecAccess javaxCryptoSpecAccess;
@@ -1840,7 +1425,7 @@ index 08e1133ffae..7d6e6b3cbc6 100644
  
      public static void setJavaUtilCollectionAccess(JavaUtilCollectionAccess juca) {
          javaUtilCollectionAccess = juca;
-@@ -498,4 +500,15 @@ public class SharedSecrets {
+@@ -521,4 +523,15 @@ public class SharedSecrets {
              MethodHandles.lookup().ensureInitialized(c);
          } catch (IllegalAccessException e) {}
      }
@@ -1857,31 +1442,30 @@ index 08e1133ffae..7d6e6b3cbc6 100644
 +    }
  }
 diff --git a/src/java.base/share/classes/module-info.java b/src/java.base/share/classes/module-info.java
-index e280defabe0..724dcf76edd 100644
+index d985dec174f..a5b9cbf7fbc 100644
 --- a/src/java.base/share/classes/module-info.java
 +++ b/src/java.base/share/classes/module-info.java
-@@ -155,6 +155,8 @@ module java.base {
+@@ -163,6 +163,7 @@ module java.base {
          java.naming,
          java.rmi,
          jdk.charsets,
-+        jdk.crypto.cryptoki,
 +        jdk.crypto.ec,
          jdk.jartool,
          jdk.jlink,
-         jdk.net;
+         jdk.jfr,
 diff --git a/src/java.base/share/classes/sun/security/provider/SunEntries.java b/src/java.base/share/classes/sun/security/provider/SunEntries.java
-index 46d3ee8bb06..53bc4851d23 100644
+index 0d4ae1019e1..e839866a28c 100644
 --- a/src/java.base/share/classes/sun/security/provider/SunEntries.java
 +++ b/src/java.base/share/classes/sun/security/provider/SunEntries.java
-@@ -30,6 +30,7 @@ import java.net.*;
- import java.util.*;
- import java.security.*;
+@@ -38,6 +38,7 @@ import java.util.HashMap;
+ import java.util.Iterator;
+ import java.util.LinkedHashSet;
  
 +import jdk.internal.access.SharedSecrets;
  import jdk.internal.util.StaticProperty;
  import sun.security.action.GetBooleanAction;
- import sun.security.util.SecurityProviderConstants;
-@@ -83,6 +84,10 @@ import static sun.security.util.SecurityProviderConstants.getAliases;
+ 
+@@ -91,6 +92,10 @@ import static sun.security.util.SecurityProviderConstants.getAliases;
  
  public final class SunEntries {
  
@@ -1892,7 +1476,7 @@ index 46d3ee8bb06..53bc4851d23 100644
      // the default algo used by SecureRandom class for new SecureRandom() calls
      public static final String DEF_SECURE_RANDOM_ALGO;
  
-@@ -94,99 +99,101 @@ public final class SunEntries {
+@@ -102,99 +107,101 @@ public final class SunEntries {
          // common attribute map
          HashMap<String, String> attrs = new HashMap<>(3);
  
@@ -2085,7 +1669,7 @@ index 46d3ee8bb06..53bc4851d23 100644
  
          /*
           * Algorithm Parameter Generator engines
-@@ -201,42 +208,44 @@ public final class SunEntries {
+@@ -209,42 +216,44 @@ public final class SunEntries {
          addWithAlias(p, "AlgorithmParameters", "DSA",
                  "sun.security.provider.DSAParameters", attrs);
  
@@ -2166,7 +1750,7 @@ index 46d3ee8bb06..53bc4851d23 100644
          /*
           * Certificates
 diff --git a/src/java.base/share/classes/sun/security/rsa/SunRsaSignEntries.java b/src/java.base/share/classes/sun/security/rsa/SunRsaSignEntries.java
-index ca79f25cc44..225517ac69b 100644
+index 539ef1e8ee8..7662684797e 100644
 --- a/src/java.base/share/classes/sun/security/rsa/SunRsaSignEntries.java
 +++ b/src/java.base/share/classes/sun/security/rsa/SunRsaSignEntries.java
 @@ -27,6 +27,7 @@ package sun.security.rsa;
@@ -2284,7 +1868,7 @@ index ca79f25cc44..225517ac69b 100644
                  "sun.security.rsa.PSSParameters", null);
      }
 diff --git a/src/java.base/share/classes/sun/security/ssl/SSLContextImpl.java b/src/java.base/share/classes/sun/security/ssl/SSLContextImpl.java
-index a7fc33d9ffb..cec40ba7b21 100644
+index a9f97c76cb9..3571778367f 100644
 --- a/src/java.base/share/classes/sun/security/ssl/SSLContextImpl.java
 +++ b/src/java.base/share/classes/sun/security/ssl/SSLContextImpl.java
 @@ -32,6 +32,7 @@ import java.security.cert.*;
@@ -2295,7 +1879,7 @@ index a7fc33d9ffb..cec40ba7b21 100644
  import sun.security.action.GetPropertyAction;
  import sun.security.provider.certpath.AlgorithmChecker;
  import sun.security.validator.Validator;
-@@ -536,22 +537,40 @@ public abstract class SSLContextImpl extends SSLContextSpi {
+@@ -530,22 +531,40 @@ public abstract class SSLContextImpl extends SSLContextSpi {
          private static final List<CipherSuite> serverDefaultCipherSuites;
  
          static {
@@ -2352,7 +1936,7 @@ index a7fc33d9ffb..cec40ba7b21 100644
  
              supportedCipherSuites = getApplicableSupportedCipherSuites(
                      supportedProtocols);
-@@ -842,12 +861,23 @@ public abstract class SSLContextImpl extends SSLContextSpi {
+@@ -836,12 +855,23 @@ public abstract class SSLContextImpl extends SSLContextSpi {
              ProtocolVersion[] candidates;
              if (refactored.isEmpty()) {
                  // Client and server use the same default protocols.
@@ -2412,10 +1996,10 @@ index 894e26dfad8..8b16378b96b 100644
              "sun.security.ssl.SSLContextImpl$TLSContext",
              List.of("SSL"), null);
 diff --git a/src/java.base/share/conf/security/java.security b/src/java.base/share/conf/security/java.security
-index f913c981ddc..fd1d0a9e478 100644
+index 8156eea7e11..6a7f6eeafcc 100644
 --- a/src/java.base/share/conf/security/java.security
 +++ b/src/java.base/share/conf/security/java.security
-@@ -79,6 +79,16 @@ security.provider.tbd=Apple
+@@ -85,6 +85,16 @@ security.provider.tbd=Apple
  #endif
  security.provider.tbd=SunPKCS11
  
@@ -2432,7 +2016,7 @@ index f913c981ddc..fd1d0a9e478 100644
  #
  # A list of preferred providers for specific algorithms. These providers will
  # be searched for matching algorithms before the list of registered providers.
-@@ -289,6 +299,11 @@ policy.ignoreIdentityScope=false
+@@ -295,6 +305,11 @@ policy.ignoreIdentityScope=false
  #
  keystore.type=pkcs12
  
@@ -2444,7 +2028,7 @@ index f913c981ddc..fd1d0a9e478 100644
  #
  # Controls compatibility mode for JKS and PKCS12 keystore types.
  #
-@@ -326,6 +341,13 @@ package.definition=sun.misc.,\
+@@ -332,6 +347,13 @@ package.definition=sun.misc.,\
  #
  security.overridePropertiesFile=true
  
@@ -2459,10 +2043,10 @@ index f913c981ddc..fd1d0a9e478 100644
  # Determines the default key and trust manager factory algorithms for
  # the javax.net.ssl package.
 diff --git a/src/java.base/share/lib/security/default.policy b/src/java.base/share/lib/security/default.policy
-index 20f53b1cd4c..6db2393efb8 100644
+index 2a01c06250a..aea4620b1ab 100644
 --- a/src/java.base/share/lib/security/default.policy
 +++ b/src/java.base/share/lib/security/default.policy
-@@ -123,6 +123,7 @@ grant codeBase "jrt:/jdk.charsets" {
+@@ -124,6 +124,7 @@ grant codeBase "jrt:/jdk.charsets" {
  grant codeBase "jrt:/jdk.crypto.ec" {
      permission java.lang.RuntimePermission
                     "accessClassInPackage.sun.security.*";
@@ -2470,20 +2054,254 @@ index 20f53b1cd4c..6db2393efb8 100644
      permission java.lang.RuntimePermission "loadLibrary.sunec";
      permission java.security.SecurityPermission "putProviderProperty.SunEC";
      permission java.security.SecurityPermission "clearProviderProperties.SunEC";
-@@ -132,6 +133,7 @@ grant codeBase "jrt:/jdk.crypto.ec" {
- grant codeBase "jrt:/jdk.crypto.cryptoki" {
-     permission java.lang.RuntimePermission
-                    "accessClassInPackage.com.sun.crypto.provider";
-+    permission java.lang.RuntimePermission "accessClassInPackage.jdk.internal.access";
-     permission java.lang.RuntimePermission "accessClassInPackage.jdk.internal.misc";
-     permission java.lang.RuntimePermission
-                    "accessClassInPackage.sun.security.*";
+diff --git a/src/java.base/share/native/libsystemconf/systemconf.c b/src/java.base/share/native/libsystemconf/systemconf.c
+new file mode 100644
+index 00000000000..ddf9befe5bc
+--- /dev/null
++++ b/src/java.base/share/native/libsystemconf/systemconf.c
+@@ -0,0 +1,236 @@
++/*
++ * Copyright (c) 2021, Red Hat, Inc.
++ * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
++ *
++ * This code is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 only, as
++ * published by the Free Software Foundation.  Oracle designates this
++ * particular file as subject to the "Classpath" exception as provided
++ * by Oracle in the LICENSE file that accompanied this code.
++ *
++ * This code is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
++ * version 2 for more details (a copy is included in the LICENSE file that
++ * accompanied this code).
++ *
++ * You should have received a copy of the GNU General Public License version
++ * 2 along with this work; if not, write to the Free Software Foundation,
++ * Inc., 51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA.
++ *
++ * Please contact Oracle, 500 Oracle Parkway, Redwood Shores, CA 94065 USA
++ * or visit www.oracle.com if you need additional information or have any
++ * questions.
++ */
++
++#include <jni.h>
++#include <jni_util.h>
++#include "jvm_md.h"
++#include <stdio.h>
++
++#ifdef LINUX
++
++#ifdef SYSCONF_NSS
++#include <nss3/pk11pub.h>
++#else
++#include <dlfcn.h>
++#endif //SYSCONF_NSS
++
++#include "java_security_SystemConfigurator.h"
++
++#define MSG_MAX_SIZE 256
++#define FIPS_ENABLED_PATH "/proc/sys/crypto/fips_enabled"
++
++typedef int (SECMOD_GET_SYSTEM_FIPS_ENABLED_TYPE)(void);
++
++static SECMOD_GET_SYSTEM_FIPS_ENABLED_TYPE *getSystemFIPSEnabled;
++static jmethodID debugPrintlnMethodID = NULL;
++static jobject debugObj = NULL;
++
++static void dbgPrint(JNIEnv *env, const char* msg)
++{
++    jstring jMsg;
++    if (debugObj != NULL) {
++        jMsg = (*env)->NewStringUTF(env, msg);
++        CHECK_NULL(jMsg);
++        (*env)->CallVoidMethod(env, debugObj, debugPrintlnMethodID, jMsg);
++    }
++}
++
++static void throwIOException(JNIEnv *env, const char *msg)
++{
++    jclass cls = (*env)->FindClass(env, "java/io/IOException");
++    if (cls != 0)
++        (*env)->ThrowNew(env, cls, msg);
++}
++
++static void handle_msg(JNIEnv *env, const char* msg, int msg_bytes)
++{
++  if (msg_bytes > 0 && msg_bytes < MSG_MAX_SIZE) {
++    dbgPrint(env, msg);
++  } else {
++    dbgPrint(env, "systemconf: cannot render message");
++  }
++}
++
++// Only used when NSS is not linked at build time
++#ifndef SYSCONF_NSS
++
++static void *nss_handle;
++
++static jboolean loadNSS(JNIEnv *env)
++{
++  char msg[MSG_MAX_SIZE];
++  int msg_bytes;
++  const char* errmsg;
++
++  nss_handle = dlopen(JNI_LIB_NAME("nss3"), RTLD_LAZY);
++  if (nss_handle == NULL) {
++    errmsg = dlerror();
++    msg_bytes = snprintf(msg, MSG_MAX_SIZE, "loadNSS: dlopen: %s\n",
++                         errmsg);
++    handle_msg(env, msg, msg_bytes);
++    return JNI_FALSE;
++  }
++  dlerror(); /* Clear errors */
++  getSystemFIPSEnabled = (SECMOD_GET_SYSTEM_FIPS_ENABLED_TYPE*)dlsym(nss_handle, "SECMOD_GetSystemFIPSEnabled");
++  if ((errmsg = dlerror()) != NULL) {
++    msg_bytes = snprintf(msg, MSG_MAX_SIZE, "loadNSS: dlsym: %s\n",
++                         errmsg);
++    handle_msg(env, msg, msg_bytes);
++    return JNI_FALSE;
++  }
++  return JNI_TRUE;
++}
++
++static void closeNSS(JNIEnv *env)
++{
++  char msg[MSG_MAX_SIZE];
++  int msg_bytes;
++  const char* errmsg;
++
++  if (dlclose(nss_handle) != 0) {
++    errmsg = dlerror();
++    msg_bytes = snprintf(msg, MSG_MAX_SIZE, "closeNSS: dlclose: %s\n",
++                         errmsg);
++    handle_msg(env, msg, msg_bytes);
++  }
++}
++
++#endif
++
++/*
++ * Class:     java_security_SystemConfigurator
++ * Method:    JNI_OnLoad
++ */
++JNIEXPORT jint JNICALL DEF_JNI_OnLoad(JavaVM *vm, void *reserved)
++{
++    JNIEnv *env;
++    jclass sysConfCls, debugCls;
++    jfieldID sdebugFld;
++
++    if ((*vm)->GetEnv(vm, (void**) &env, JNI_VERSION_1_2) != JNI_OK) {
++        return JNI_EVERSION; /* JNI version not supported */
++    }
++
++    sysConfCls = (*env)->FindClass(env,"java/security/SystemConfigurator");
++    if (sysConfCls == NULL) {
++        printf("libsystemconf: SystemConfigurator class not found\n");
++        return JNI_ERR;
++    }
++    sdebugFld = (*env)->GetStaticFieldID(env, sysConfCls,
++            "sdebug", "Lsun/security/util/Debug;");
++    if (sdebugFld == NULL) {
++        printf("libsystemconf: SystemConfigurator::sdebug field not found\n");
++        return JNI_ERR;
++    }
++    debugObj = (*env)->GetStaticObjectField(env, sysConfCls, sdebugFld);
++    if (debugObj != NULL) {
++        debugCls = (*env)->FindClass(env,"sun/security/util/Debug");
++        if (debugCls == NULL) {
++            printf("libsystemconf: Debug class not found\n");
++            return JNI_ERR;
++        }
++        debugPrintlnMethodID = (*env)->GetMethodID(env, debugCls,
++                "println", "(Ljava/lang/String;)V");
++        if (debugPrintlnMethodID == NULL) {
++            printf("libsystemconf: Debug::println(String) method not found\n");
++            return JNI_ERR;
++        }
++        debugObj = (*env)->NewGlobalRef(env, debugObj);
++    }
++
++#ifdef SYSCONF_NSS
++    getSystemFIPSEnabled = *SECMOD_GetSystemFIPSEnabled;
++#else
++    if (loadNSS(env) == JNI_FALSE) {
++      dbgPrint(env, "libsystemconf: Failed to load NSS library.");
++    }
++#endif
++
++    return (*env)->GetVersion(env);
++}
++
++/*
++ * Class:     java_security_SystemConfigurator
++ * Method:    JNI_OnUnload
++ */
++JNIEXPORT void JNICALL DEF_JNI_OnUnload(JavaVM *vm, void *reserved)
++{
++    JNIEnv *env;
++
++    if (debugObj != NULL) {
++        if ((*vm)->GetEnv(vm, (void**) &env, JNI_VERSION_1_2) != JNI_OK) {
++            return; /* Should not happen */
++        }
++#ifndef SYSCONF_NSS
++        closeNSS(env);
++#endif
++        (*env)->DeleteGlobalRef(env, debugObj);
++    }
++}
++
++JNIEXPORT jboolean JNICALL Java_java_security_SystemConfigurator_getSystemFIPSEnabled
++  (JNIEnv *env, jclass cls)
++{
++    int fips_enabled;
++    char msg[MSG_MAX_SIZE];
++    int msg_bytes;
++
++    if (getSystemFIPSEnabled != NULL) {
++      dbgPrint(env, "getSystemFIPSEnabled: calling SECMOD_GetSystemFIPSEnabled");
++      fips_enabled = (*getSystemFIPSEnabled)();
++      msg_bytes = snprintf(msg, MSG_MAX_SIZE, "getSystemFIPSEnabled:"   \
++                           " SECMOD_GetSystemFIPSEnabled returned 0x%x", fips_enabled);
++      handle_msg(env, msg, msg_bytes);
++      return (fips_enabled == 1 ? JNI_TRUE : JNI_FALSE);
++    } else {
++      FILE *fe;
++
++      dbgPrint(env, "getSystemFIPSEnabled: reading " FIPS_ENABLED_PATH);
++      if ((fe = fopen(FIPS_ENABLED_PATH, "r")) == NULL) {
++        throwIOException(env, "Cannot open " FIPS_ENABLED_PATH);
++        return JNI_FALSE;
++      }
++      fips_enabled = fgetc(fe);
++      fclose(fe);
++      if (fips_enabled == EOF) {
++        throwIOException(env, "Cannot read " FIPS_ENABLED_PATH);
++        return JNI_FALSE;
++      }
++      msg_bytes = snprintf(msg, MSG_MAX_SIZE, "getSystemFIPSEnabled:"   \
++                           " read character is '%c'", fips_enabled);
++      handle_msg(env, msg, msg_bytes);
++      return (fips_enabled == '1' ? JNI_TRUE : JNI_FALSE);
++    }
++}
++
++#else // !LINUX
++
++JNIEXPORT jboolean JNICALL Java_java_security_SystemConfigurator_getSystemFIPSEnabled
++  (JNIEnv *env, jclass cls)
++{
++    return JNI_FALSE;
++}
++
++#endif
 diff --git a/src/jdk.crypto.cryptoki/share/classes/sun/security/pkcs11/FIPSKeyImporter.java b/src/jdk.crypto.cryptoki/share/classes/sun/security/pkcs11/FIPSKeyImporter.java
 new file mode 100644
-index 00000000000..187be7295f3
+index 00000000000..52a403107c3
 --- /dev/null
 +++ b/src/jdk.crypto.cryptoki/share/classes/sun/security/pkcs11/FIPSKeyImporter.java
-@@ -0,0 +1,490 @@
+@@ -0,0 +1,461 @@
 +/*
 + * Copyright (c) 2021, Red Hat, Inc.
 + * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS FILE HEADER.
@@ -2524,7 +2342,6 @@ index 00000000000..187be7295f3
 +import javax.crypto.Cipher;
 +import javax.crypto.SecretKeyFactory;
 +import javax.crypto.spec.SecretKeySpec;
-+import javax.crypto.spec.DHPrivateKeySpec;
 +import javax.crypto.spec.IvParameterSpec;
 +
 +import sun.security.jca.JCAUtil;
@@ -2675,34 +2492,6 @@ index 00000000000..187be7295f3
 +                            ECUtil.getECParameterSpec(sunECProvider,
 +                                    attrsMap.get(CKA_EC_PARAMS).getByteArray()))
 +                            .getEncoded();
-+                    if (token.config.getNssNetscapeDbWorkaround() &&
-+                            attrsMap.get(CKA_NETSCAPE_DB) == null) {
-+                        attrsMap.put(CKA_NETSCAPE_DB,
-+                                new CK_ATTRIBUTE(CKA_NETSCAPE_DB, BigInteger.ZERO));
-+                    }
-+                } else if (keyType == CKK_DH) {
-+                    if (debug != null) {
-+                        debug.println("Importing a Diffie-Hellman private key...");
-+                    }
-+                    if (DHKF == null) {
-+                        DHKFLock.lock();
-+                        try {
-+                            if (DHKF == null) {
-+                                DHKF = KeyFactory.getInstance(
-+                                        "DH", P11Util.getSunJceProvider());
-+                            }
-+                        } finally {
-+                            DHKFLock.unlock();
-+                        }
-+                    }
-+                    DHPrivateKeySpec spec = new DHPrivateKeySpec
-+                            (((v = attrsMap.get(CKA_VALUE).getBigInteger()) != null)
-+                                    ? v : BigInteger.ZERO,
-+                            ((v = attrsMap.get(CKA_PRIME).getBigInteger()) != null)
-+                                    ? v : BigInteger.ZERO,
-+                            ((v = attrsMap.get(CKA_BASE).getBigInteger()) != null)
-+                                    ? v : BigInteger.ZERO);
-+                    keyBytes = DHKF.generatePrivate(spec).getEncoded();
 +                    if (token.config.getNssNetscapeDbWorkaround() &&
 +                            attrsMap.get(CKA_NETSCAPE_DB) == null) {
 +                        attrsMap.put(CKA_NETSCAPE_DB,
@@ -2975,7 +2764,7 @@ index 00000000000..187be7295f3
 +    }
 +}
 diff --git a/src/jdk.crypto.cryptoki/share/classes/sun/security/pkcs11/P11Key.java b/src/jdk.crypto.cryptoki/share/classes/sun/security/pkcs11/P11Key.java
-index cae28a06d7b..1c5bd3d15ac 100644
+index af6fbeba48a..a20278cb683 100644
 --- a/src/jdk.crypto.cryptoki/share/classes/sun/security/pkcs11/P11Key.java
 +++ b/src/jdk.crypto.cryptoki/share/classes/sun/security/pkcs11/P11Key.java
 @@ -37,6 +37,8 @@ import javax.crypto.*;
@@ -2987,29 +2776,30 @@ index cae28a06d7b..1c5bd3d15ac 100644
  import sun.security.rsa.RSAUtil.KeyType;
  import sun.security.rsa.RSAPublicKeyImpl;
  import sun.security.rsa.RSAPrivateCrtKeyImpl;
-@@ -69,6 +71,9 @@ import sun.security.jca.JCAUtil;
-  */
- abstract class P11Key implements Key, Length {
+@@ -72,6 +74,9 @@ abstract class P11Key implements Key, Length {
+     @Serial
+     private static final long serialVersionUID = -2575874101938349339L;
  
 +    private static final boolean plainKeySupportEnabled = SharedSecrets
 +            .getJavaSecuritySystemConfiguratorAccess().isPlainKeySupportEnabled();
 +
-     private static final long serialVersionUID = -2575874101938349339L;
- 
      private static final String PUBLIC = "public";
-@@ -396,8 +401,9 @@ abstract class P11Key implements Key, Length {
+     private static final String PRIVATE = "private";
+     private static final String SECRET = "secret";
+@@ -391,8 +396,10 @@ abstract class P11Key implements Key, Length {
                      new CK_ATTRIBUTE(CKA_EXTRACTABLE),
          });
  
 -        boolean keySensitive = (attrs[0].getBoolean() ||
 -                attrs[1].getBoolean() || !attrs[2].getBoolean());
-+        boolean keySensitive = (!plainKeySupportEnabled &&
++        boolean exportable = plainKeySupportEnabled && !algorithm.equals("DH");
++        boolean keySensitive = (!exportable &&
 +            (attrs[0].getBoolean() ||
 +             attrs[1].getBoolean() || !attrs[2].getBoolean()));
  
-         switch (algorithm) {
-         case "RSA":
-@@ -452,7 +458,8 @@ abstract class P11Key implements Key, Length {
+         return switch (algorithm) {
+             case "RSA" -> P11RSAPrivateKeyInternal.of(session, keyID, algorithm,
+@@ -444,7 +451,8 @@ abstract class P11Key implements Key, Length {
  
          public String getFormat() {
              token.ensureValid();
@@ -3019,13 +2809,13 @@ index cae28a06d7b..1c5bd3d15ac 100644
                  return null;
              } else {
                  return "RAW";
-@@ -1574,4 +1581,3 @@ final class SessionKeyRef extends PhantomReference<P11Key> {
+@@ -1575,4 +1583,3 @@ final class SessionKeyRef extends PhantomReference<P11Key> {
          this.clear();
      }
  }
 -
 diff --git a/src/jdk.crypto.cryptoki/share/classes/sun/security/pkcs11/SunPKCS11.java b/src/jdk.crypto.cryptoki/share/classes/sun/security/pkcs11/SunPKCS11.java
-index 0f65a8b3221..0a406e1a2c8 100644
+index 04a1a70ed23..a5c9b5fddf4 100644
 --- a/src/jdk.crypto.cryptoki/share/classes/sun/security/pkcs11/SunPKCS11.java
 +++ b/src/jdk.crypto.cryptoki/share/classes/sun/security/pkcs11/SunPKCS11.java
 @@ -26,6 +26,9 @@
@@ -3046,9 +2836,9 @@ index 0f65a8b3221..0a406e1a2c8 100644
  import jdk.internal.misc.InnocuousThread;
  import sun.security.util.Debug;
  import sun.security.util.ResourcesMgr;
-@@ -62,6 +66,37 @@ import static sun.security.pkcs11.wrapper.PKCS11Exception.RV.*;
-  */
- public final class SunPKCS11 extends AuthProvider {
+@@ -65,6 +69,37 @@ public final class SunPKCS11 extends AuthProvider {
+     @Serial
+     private static final long serialVersionUID = -1354835039035306505L;
  
 +    private static final boolean systemFipsEnabled = SharedSecrets
 +            .getJavaSecuritySystemConfiguratorAccess().isSystemFipsEnabled();
@@ -3081,10 +2871,10 @@ index 0f65a8b3221..0a406e1a2c8 100644
 +        fipsExportKey = fipsExportKeyTmp;
 +    }
 +
-     private static final long serialVersionUID = -1354835039035306505L;
- 
      static final Debug debug = Debug.getInstance("sunpkcs11");
-@@ -326,9 +361,19 @@ public final class SunPKCS11 extends AuthProvider {
+     // the PKCS11 object through which we make the native calls
+     @SuppressWarnings("serial") // Type of field is not Serializable;
+@@ -325,9 +360,19 @@ public final class SunPKCS11 extends AuthProvider {
              // request multithreaded access first
              initArgs.flags = CKF_OS_LOCKING_OK;
              PKCS11 tmpPKCS11;
@@ -3106,7 +2896,7 @@ index 0f65a8b3221..0a406e1a2c8 100644
              } catch (PKCS11Exception e) {
                  if (debug != null) {
                      debug.println("Multi-threaded initialization failed: " + e);
-@@ -343,8 +388,9 @@ public final class SunPKCS11 extends AuthProvider {
+@@ -342,8 +387,9 @@ public final class SunPKCS11 extends AuthProvider {
                  } else {
                      initArgs.flags = 0;
                  }
@@ -3118,7 +2908,7 @@ index 0f65a8b3221..0a406e1a2c8 100644
              }
              p11 = tmpPKCS11;
  
-@@ -384,6 +430,24 @@ public final class SunPKCS11 extends AuthProvider {
+@@ -383,6 +429,24 @@ public final class SunPKCS11 extends AuthProvider {
              if (nssModule != null) {
                  nssModule.setProvider(this);
              }
@@ -3400,11 +3190,11 @@ index 4b06daaf264..55e14945469 100644
 +}
  }
 diff --git a/src/jdk.crypto.cryptoki/share/classes/sun/security/pkcs11/wrapper/PKCS11Exception.java b/src/jdk.crypto.cryptoki/share/classes/sun/security/pkcs11/wrapper/PKCS11Exception.java
-index 8a560a2c48d..7d68520375b 100644
+index 920422376f8..6aa308fa5f8 100644
 --- a/src/jdk.crypto.cryptoki/share/classes/sun/security/pkcs11/wrapper/PKCS11Exception.java
 +++ b/src/jdk.crypto.cryptoki/share/classes/sun/security/pkcs11/wrapper/PKCS11Exception.java
-@@ -190,6 +190,14 @@ public class PKCS11Exception extends Exception {
-         return "0x" + Functions.toFullHexString((int)errorCode);
+@@ -215,6 +215,14 @@ public class PKCS11Exception extends Exception {
+         return res;
      }
  
 +    /**
@@ -3419,18 +3209,18 @@ index 8a560a2c48d..7d68520375b 100644
       * Constructor taking the error code (the CKR_* constants in PKCS#11) and
       * extra info for error message.
 diff --git a/src/jdk.crypto.ec/share/classes/sun/security/ec/SunEC.java b/src/jdk.crypto.ec/share/classes/sun/security/ec/SunEC.java
-index 200ed63634f..fa258d736d0 100644
+index 3cfb74c8115..0e333d8ba74 100644
 --- a/src/jdk.crypto.ec/share/classes/sun/security/ec/SunEC.java
 +++ b/src/jdk.crypto.ec/share/classes/sun/security/ec/SunEC.java
-@@ -38,6 +38,7 @@ import java.util.HashMap;
- import java.util.Iterator;
+@@ -34,6 +34,7 @@ import java.security.ProviderException;
+ import java.util.HashMap;
  import java.util.List;
  
 +import jdk.internal.access.SharedSecrets;
- import sun.security.ec.ed.EdDSAAlgorithmParameters;
  import sun.security.ec.ed.EdDSAKeyFactory;
  import sun.security.ec.ed.EdDSAKeyPairGenerator;
-@@ -56,6 +57,10 @@ public final class SunEC extends Provider {
+ import sun.security.ec.ed.EdDSASignature;
+@@ -50,6 +51,10 @@ public final class SunEC extends Provider {
  
      private static final long serialVersionUID = -2279741672933606418L;
  
@@ -3441,7 +3231,7 @@ index 200ed63634f..fa258d736d0 100644
      private static class ProviderServiceA extends ProviderService {
          ProviderServiceA(Provider p, String type, String algo, String cn,
              HashMap<String, String> attrs) {
-@@ -249,83 +254,85 @@ public final class SunEC extends Provider {
+@@ -243,83 +248,85 @@ public final class SunEC extends Provider {
          putXDHEntries();
          putEdDSAEntries();
  
@@ -3604,7 +3394,7 @@ index 200ed63634f..fa258d736d0 100644
      }
  
      private void putXDHEntries() {
-@@ -342,23 +349,25 @@ public final class SunEC extends Provider {
+@@ -336,23 +343,25 @@ public final class SunEC extends Provider {
              "X448", "sun.security.ec.XDHKeyFactory.X448",
              ATTRS));
  
@@ -3647,7 +3437,7 @@ index 200ed63634f..fa258d736d0 100644
      }
  
      private void putEdDSAEntries() {
-@@ -373,21 +382,23 @@ public final class SunEC extends Provider {
+@@ -367,21 +376,23 @@ public final class SunEC extends Provider {
          putService(new ProviderServiceA(this, "KeyFactory",
              "Ed448", "sun.security.ec.ed.EdDSAKeyFactory.Ed448", ATTRS));
  
