@@ -3,6 +3,44 @@ Key:
 JDK-X  - https://bugs.openjdk.java.net/browse/JDK-X
 CVE-XXXX-YYYY: https://cve.mitre.org/cgi-bin/cvename.cgi?name=XXXX-YYYY
 
+New in release OpenJDK 20.0.1 (2023-04-18):
+===========================================
+
+* CVEs
+  - CVE-2023-21930
+  - CVE-2023-21937
+  - CVE-2023-21938
+  - CVE-2023-21939
+  - CVE-2023-21967
+  - CVE-2023-21968
+* Security fixes
+  - JDK-8287404: Improve ping times
+  - JDK-8288436: Improve Xalan supports
+  - JDK-8294474: Better AES support
+  - JDK-8295304: Runtime support improvements
+  - JDK-8296676, JDK-8296622: Improve String platform support
+  - JDK-8296684: Improve String platform support
+  - JDK-8296692: Improve String platform support
+  - JDK-8296832: Improve Swing platform support
+  - JDK-8297371: Improve UTF8 representation redux
+  - JDK-8298310: Enhance TLS session negotiation
+  - JDK-8298667: Improved path handling
+  - JDK-8299129: Enhance NameService lookups
+* Other changes
+  - JDK-8208077: File.listRoots performance degradation
+  - JDK-8245654: Add Certigna Root CA
+  - JDK-8278965: crash in SymbolTable::do_lookup
+  - JDK-8295951: intermittent cmp_baseline task failures with CDS files
+  - JDK-8299194: CustomTzIDCheckDST.java may fail at future date
+  - JDK-8299843: Bump version numbers for 20.0.1
+  - JDK-8299947: Change milestone to fcs for all releases
+  - JDK-8301123: Enable Symbol refcounting underflow checks in PRODUCT
+  - JDK-8301858: Verification error when compiling switch with record patterns
+  - JDK-8301876: Crash in DumpTimeClassInfo::add_verification_constraint
+  - JDK-8302202: Incorrect desugaring of null-allowed nested patterns
+  - JDK-8302879: doc/building.md update link to jtreg builds
+  - JDK-8303412: Update linux_x64-to-linux_aarch64 cross compilation devkit at Oracle
+
 New in release OpenJDK 20.0.0 (2023-03-21):
 ===========================================
 Major changes are listed below.  Some changes may have been backported
