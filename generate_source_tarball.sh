@@ -147,17 +147,17 @@ pushd "${FILE_NAME_ROOT}"
 
     # Remove history and GHA
     echo "find openjdk -name '.hgtags'"
-    find openjdk -name '.hgtags' -exec rm -v '{}' '+'
+    find openjdk -name '.hgtags' -exec rm -fv '{}' '+'
     echo "find openjdk -name '.hgignore'"
-    find openjdk -name '.hgignore' -exec rm -v '{}' '+'
+    find openjdk -name '.hgignore' -exec rm -fv '{}' '+'
     echo "find openjdk -name '.gitattributes'"
-    find openjdk -name '.gitattributes' -exec rm -v '{}' '+'
+    find openjdk -name '.gitattributes' -exec rm -fv '{}' '+'
     echo "find openjdk -name '.gitignore'"
-    find openjdk -name '.gitignore' -exec rm -v '{}' '+'
+    find openjdk -name '.gitignore' -exec rm -fv '{}' '+'
     echo "find openjdk -name '.git'"
-    find openjdk -name '.git' -exec rm -rv '{}' '+'
+    find openjdk -name '.git' -exec rm -rfv '{}' '+'
     echo "find openjdk -name '.github'"
-    find openjdk -name '.github' -exec rm -rv '{}' '+'
+    find openjdk -name '.github' -exec rm -rfv '{}' '+'
 
     echo "Compressing remaining forest"
     if [ "X$COMPRESSION" = "Xxz" ] ; then
