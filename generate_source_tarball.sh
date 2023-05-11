@@ -63,23 +63,23 @@ if [ "x$BOOT_JDK" = "x" ] ; then
     BOOT_JDK=/usr/lib/jvm/java-${MAJOR_VER}-openjdk;
     echo -n "Checking for ${BOOT_JDK}...";
     if [ -d ${BOOT_JDK} -a -x ${BOOT_JDK}/bin/java ] ; then
-	echo "Boot JDK found at ${BOOT_JDK}";
+        echo "Boot JDK found at ${BOOT_JDK}";
     else
-	echo "Not found";
-	PREV_VER=$((${MAJOR_VER} - 1));
-	BOOT_JDK=/usr/lib/jvm/java-${PREV_VER}-openjdk;
-	echo -n "Checking for ${BOOT_JDK}...";
-	if [ -d ${BOOT_JDK} -a -x ${BOOT_JDK}/bin/java ] ; then
-	    echo "Boot JDK found at ${BOOT_JDK}";
-	else
-	    echo "Not found";
-	    exit 4;
-	fi
+        echo "Not found";
+        PREV_VER=$((${MAJOR_VER} - 1));
+        BOOT_JDK=/usr/lib/jvm/java-${PREV_VER}-openjdk;
+        echo -n "Checking for ${BOOT_JDK}...";
+        if [ -d ${BOOT_JDK} -a -x ${BOOT_JDK}/bin/java ] ; then
+            echo "Boot JDK found at ${BOOT_JDK}";
+        else
+            echo "Not found";
+            exit 4;
+        fi
     fi
 else
     echo "Boot JDK: ${BOOT_JDK}";
 fi
-    
+
 # REPO_NAME is only needed when we default on REPO_ROOT and FILE_NAME_ROOT
 if [ "x$FILE_NAME_ROOT" = "x" -o "x$REPO_ROOT" = "x" ] ; then
   if [ "x$PROJECT_NAME" = "x" ] ; then
@@ -143,7 +143,7 @@ pushd "${FILE_NAME_ROOT}"
 
     # Remove commit checks
     echo "Removing $(find openjdk -name '.jcheck' -print)"
-    find openjdk -name '.jcheck' -print0 | xargs -0 rm -r
+    find openjdk -name '.jcheck' -print0 | xargs -0 rm -rf
 
     # Remove history and GHA
     echo "find openjdk -name '.hgtags'"
@@ -165,7 +165,8 @@ pushd "${FILE_NAME_ROOT}"
     else
         SWITCH=czf
     fi
-    tar --exclude-vcs -$SWITCH ${FILE_NAME_ROOT}.tar.${COMPRESSION} $TO_COMPRESS
-    mv ${FILE_NAME_ROOT}.tar.${COMPRESSION}  ..
+    TARBALL_NAME=${FILE_NAME_ROOT}.tar.${COMPRESSION}
+    tar --exclude-vcs -$SWITCH ${TARBALL_NAME} $TO_COMPRESS
+    mv ${TARBALL_NAME} ..
 popd
 echo "Done. You may want to remove the uncompressed version - $FILE_NAME_ROOT."
