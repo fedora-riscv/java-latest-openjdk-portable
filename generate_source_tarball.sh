@@ -4,7 +4,6 @@
 # Example:
 # When used from local repo set REPO_ROOT pointing to file:// with your repo
 # If your local repo follows upstream forests conventions, it may be enough to set OPENJDK_URL
-# If you want to use a local copy of patch PR3788, set the path to it in the PR3788 variable
 #
 # In any case you have to set PROJECT_NAME REPO_NAME and VERSION. eg:
 # PROJECT_NAME=openjdk
@@ -41,6 +40,7 @@ if [ "x$1" = "xhelp" ] ; then
     echo "OPENJDK_URL - the URL to retrieve code from (optional; defaults to ${OPENJDK_URL_DEFAULT})"
     echo "COMPRESSION - the compression type to use (optional; defaults to ${COMPRESSION_DEFAULT})"
     echo "FILE_NAME_ROOT - name of the archive, minus extensions (optional; defaults to PROJECT_NAME-REPO_NAME-VERSION)"
+    echo "REPO_ROOT - the location of the Git repository to archive (optional; defaults to OPENJDK_URL/PROJECT_NAME/REPO_NAME)"
     echo "TO_COMPRESS - what part of clone to pack (default is openjdk)"
     echo "BOOT_JDK - the bootstrap JDK to satisfy the configure run"
     exit 1;
@@ -120,6 +120,17 @@ if [ "x$TO_COMPRESS" = "x" ] ; then
     TO_COMPRESS="openjdk"
     echo "No targets to be compressed specified, ; default to ${TO_COMPRESS}"
 fi;
+
+echo -e "Settings:"
+echo -e "\tVERSION: ${VERSION}"
+echo -e "\tPROJECT_NAME: ${PROJECT_NAME}"
+echo -e "\tREPO_NAME: ${REPO_NAME}"
+echo -e "\tOPENJDK_URL: ${OPENJDK_URL}"
+echo -e "\tCOMPRESSION: ${COMPRESSION}"
+echo -e "\tFILE_NAME_ROOT: ${FILE_NAME_ROOT}"
+echo -e "\tREPO_ROOT: ${REPO_ROOT}"
+echo -e "\tTO_COMPRESS: ${TO_COMPRESS}"
+echo -e "\tBOOT_JDK: ${BOOT_JDK}"
 
 if [ -d ${FILE_NAME_ROOT} ] ; then
   echo "exists exists exists exists exists exists exists "
