@@ -3,6 +3,44 @@ Key:
 JDK-X  - https://bugs.openjdk.java.net/browse/JDK-X
 CVE-XXXX-YYYY: https://cve.mitre.org/cgi-bin/cvename.cgi?name=XXXX-YYYY
 
+New in release OpenJDK 20.0.2 (2023-07-18):
+===========================================
+* CVEs
+  - CVE-2023-22041
+  - CVE-2023-22051
+  - CVE-2023-25193
+  - CVE-2023-22044
+  - CVE-2023-22045
+  - CVE-2023-22049
+  - CVE-2023-22036
+  - CVE-2023-22006
+* Other changes
+  - JDK-8208077: File.listRoots performance degradation
+  - JDK-8304741 C2 Intrinsification of Float.floatToFloat16 and Float.float16ToFloat Yields Different Result than the Interpreter
+  - JDK-8306763 GHA: MSVC installation is failing
+  - JDK-8304075 Consider removal of expiry check in VerifyCACerts.java test
+  - JDK-8304077 The "ZonedDateTime.parse" may not accept the "UTC+XX" zone id
+  - JDK-8304227 Corrupted heap dumps due to missing retries for os::write()
+  - JDK-8304424 Update HarfBuzz to 7.0.1
+  - JDK-8304887 javax/swing/JFileChooser/4847375/bug4847375.java fails with AssertionError
+  - JDK-8305123 javac regression: Compilation with --release 8 fails on underscore in enum identifiers
+  - JDK-8305537 Use default visibility for static library builds
+  - JDK-8305540 ArrayFill with store on backedge needs to reduce length by 1
+  - JDK-8305541 C2: Div/Mod nodes without zero check could be split through iv phi of loop resulting in SIGFPE
+  - JDK-8305542 C2: PhaseCFG::convert_NeverBranch_to_Goto must handle both orders of successors
+  - JDK-8305546 C2: Arraycopy intrinsic throws incorrect exception
+  - JDK-8305548 use-after-free related to GraphKit::clone_map
+  - JDK-8305549 SIGSEGV in LibraryCallKit::inline_string_copy due to constant NULL src argument
+  - JDK-8305550 C2: CmpU::Value must filter overflow computation against local sub computation
+  - JDK-8305551 C2 compiled code crashes with SIGFPE with -XX:+StressLCM and -XX:+StressGCM
+  - JDK-8305554 C2: java.lang.StringUTF16::indexOfChar intrinsic called with negative character argument
+  - JDK-8305555 C2: assert(get_ctrl(n) == cle_out) during unrolling
+  - JDK-8305557 Vector.lane() gets wrong value on x86
+
+The full list of changes in 20u can be found at:
+-  * https://builds.shipilev.net/backports-monitor/release-notes-20.0.2.txt
+-  * https://builds.shipilev.net/backports-monitor/pushes-20.0.2.txt
+
 New in release OpenJDK 20.0.1 (2023-04-18):
 ===========================================
 
